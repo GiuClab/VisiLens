@@ -1,0 +1,68 @@
+name: Build desktop apps
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build.yml"
+      - "pyproject.toml"
+      - "run_visilens.py"
+      - "src/**"
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Package ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: Windows
+          - os: macos-latest
+            platform: macOS
+          - os: ubuntu-latest
+            platform: Linux
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev]" pyinstaller
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Build application
+        run: python -m PyInstaller --noconfirm --clean --windowed --onedir --name VisiLens run_visilens.py
+
+      - name: Archive Windows package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path dist/VisiLens -DestinationPath VisiLens-Windows.zip
+
+      - name: Archive macOS application
+        if: runner.os == 'macOS'
+        run: ditto -c -k --sequesterRsrc --keepParent dist/VisiLens.app VisiLens-macOS.zip
+
+      - name: Archive Linux package
+        if: runner.os == 'Linux'
+        run: tar -czf VisiLens-Linux.tar.gz -C dist VisiLens
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: VisiLens-${{ matrix.platform }}
+          path: VisiLens-${{ matrix.platform }}.*
+          if-no-files-found: error
+          retention-days: 30
