@@ -149,3 +149,27 @@ def test_cache_reuses_unchanged_files_and_invalidates_edits(tmp_path: Path, monk
     assert not errors_last
     assert len(calls) == 2
     assert third[0].rgb_sample != first[0].rgb_sample
+
+
+def test_strict_distinguishes_transparency_from_black_background(tmp_path: Path) -> None:
+    """Same logo pixels, different background alpha: distinct assets in Strict."""
+    transparent = Image.new("RGBA", (200, 200), (0, 0, 0, 0))
+    ImageDraw.Draw(transparent).ellipse((30, 30, 170, 170), fill=(230, 176, 34, 255))
+    opaque = Image.alpha_composite(Image.new("RGBA", transparent.size, "black"), transparent)
+    a, b = tmp_path / "logo-transparent.png", tmp_path / "logo-black.png"
+    transparent.save(a)
+    opaque.save(b)
+    first, second = inspect(a), inspect(b)
+    assert first.phash == second.phash
+    assert first.rgb_sample == second.rgb_sample
+    assert first.alpha_sample != second.alpha_sample
+    assert not is_duplicate(first, second, "Strict")
+
+
+def test_transparent_resized_copy_still_matches(tmp_path: Path) -> None:
+    transparent = Image.new("RGBA", (200, 200), (0, 0, 0, 0))
+    ImageDraw.Draw(transparent).rectangle((50, 50, 150, 150), fill=(200, 30, 30, 255))
+    first, second = tmp_path / "a.png", tmp_path / "b.png"
+    transparent.save(first)
+    transparent.resize((400, 400), Image.Resampling.NEAREST).save(second)
+    assert is_duplicate(inspect(first), inspect(second), "Strict")
