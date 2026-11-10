@@ -11,7 +11,10 @@ import imagehash
 import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tif", ".tiff"}
+EXTENSIONS = {
+    ".jpg", ".jpeg", ".jfif", ".jfi", ".jif", ".png", ".webp",
+    ".bmp", ".gif", ".tif", ".tiff",
+}
 # pHash is only a candidate filter. The RGB checks below reject visually
 # different variants that share the same shape/composition.
 THRESHOLDS = {
