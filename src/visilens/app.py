@@ -6,12 +6,14 @@ import os
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QSize, Qt, QThread, Signal, Slot
+from PySide6.QtCore import QObject, QSettings, QSize, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
+    QDialog,
+    QDialogButtonBox,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -30,6 +32,7 @@ from PySide6.QtWidgets import (
 from send2trash import send2trash
 
 from .core import ImageInfo, group_similar, scan
+from .selection import SelectionOptions, propose_selection
 
 STYLE = """
 QMainWindow, QWidget#root { background: #f4f5fa; }
@@ -124,6 +127,8 @@ class MainWindow(QMainWindow):
         self.folders: list[Path] = []
         self.images: list[ImageInfo] = []
         self.groups: list[list[ImageInfo]] = []
+        self.selected_paths: set[Path] = set()
+        self.settings = QSettings("GiuClab", "VisiLens")
         self.thread: QThread | None = None
         self.worker: ScanWorker | None = None
 
@@ -149,7 +154,7 @@ class MainWindow(QMainWindow):
             button.clicked.connect(action)
             nav.addWidget(button)
         nav.addStretch()
-        nav.addWidget(titled("0.3.1 · Anteprima", "subtitle"))
+        nav.addWidget(titled("0.4.0 · Anteprima", "subtitle"))
         outer.addWidget(sidebar)
 
         layout = QVBoxLayout()
@@ -202,7 +207,16 @@ class MainWindow(QMainWindow):
         splitter = QSplitter()
         layout.addWidget(splitter, 1)
         left, left_layout = card()
-        left_layout.addWidget(titled("Gruppi di duplicati", "section"))
+        action_row = QHBoxLayout()
+        action_row.addWidget(titled("Gruppi di duplicati", "section"), 1)
+        self.auto_button = QPushButton("✦  Selezione intelligente")
+        self.auto_button.setObjectName("primary")
+        self.auto_button.clicked.connect(self.auto_select)
+        action_row.addWidget(self.auto_button)
+        left_layout.addLayout(action_row)
+        clear_button = QPushButton("Annulla tutte le selezioni")
+        clear_button.clicked.connect(self.clear_selection)
+        left_layout.addWidget(clear_button)
         left_layout.addWidget(titled("Seleziona un gruppo per confrontare le immagini.", "subtitle"))
         self.group_list = QListWidget()
         self.group_list.currentRowChanged.connect(self.show_group)
@@ -214,7 +228,7 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(titled("Dettagli del gruppo", "section"))
         self.group_title = titled("Nessun gruppo selezionato", "subtitle")
         right_layout.addWidget(self.group_title)
-        note = titled("Nessuna immagine viene selezionata automaticamente per il cestino.",
+        note = titled("Le proposte non spostano file nel cestino senza conferma.",
                       "subtitle")
         note.setWordWrap(True)
         right_layout.addWidget(note)
@@ -239,6 +253,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.status)
         self.checks: list[tuple[ImageInfo, object]] = []
         self.update_statistics()
+        self.auto_button.setEnabled(False)
 
     @staticmethod
     def stat_card(layout: QHBoxLayout, title: str) -> QLabel:
@@ -273,6 +288,7 @@ class MainWindow(QMainWindow):
             return
         self.images = []
         self.groups = []
+        self.selected_paths.clear()
         self.group_list.clear()
         self.show_group(-1)
         self.progress.setValue(0)
@@ -324,6 +340,7 @@ class MainWindow(QMainWindow):
         self.cancel_button.setEnabled(False)
 
     def refresh_groups(self) -> None:
+        self.selected_paths.clear()
         self.groups = group_similar(self.images, self.mode.currentText())
         self.group_list.clear()
         for index, group in enumerate(self.groups, 1):
@@ -342,6 +359,7 @@ class MainWindow(QMainWindow):
             row.addLayout(information, 1)
             self.group_list.setItemWidget(item, widget)
         self.update_statistics()
+        self.auto_button.setEnabled(bool(self.groups) and self.mode.currentText() == "Strict")
         if self.groups:
             self.group_list.setCurrentRow(0)
         else:
@@ -365,7 +383,10 @@ class MainWindow(QMainWindow):
             item_layout.addWidget(thumbnail(image.path, 290, 180),
                                   alignment=Qt.AlignmentFlag.AlignHCenter)
             checkbox = QCheckBox("Sposta nel cestino")
-            checkbox.setChecked(False)
+            checkbox.setChecked(image.path in self.selected_paths)
+            checkbox.toggled.connect(
+                lambda checked, path=image.path: self.set_selected(path, checked)
+            )
             item_layout.addWidget(checkbox)
             item_layout.addWidget(titled("Consigliata da conservare" if index == 0
                                         else "Verifica prima di selezionare", "subtitle"))
@@ -382,15 +403,113 @@ class MainWindow(QMainWindow):
             self.preview_layout.addWidget(item)
             self.checks.append((image, checkbox))
 
+    def set_selected(self, path: Path, checked: bool) -> None:
+        if checked:
+            self.selected_paths.add(path)
+        else:
+            self.selected_paths.discard(path)
+
+    def clear_selection(self) -> None:
+        self.selected_paths.clear()
+        self.show_group(self.group_list.currentRow())
+        self.status.setText("Selezione annullata. Nessun file è stato modificato.")
+
+    def auto_select(self) -> None:
+        if self.mode.currentText() != "Strict" or not self.groups:
+            QMessageBox.information(self, "Selezione intelligente",
+                                    "Per sicurezza Auto-Select è disponibile solo in Strict.")
+            return
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Selezione intelligente — Preferenze")
+        dialog.setMinimumWidth(490)
+        form = QVBoxLayout(dialog)
+        form.addWidget(titled("Quale immagine vuoi conservare?", "section"))
+        form.addWidget(titled("Nessuna immagine verrà eliminata automaticamente.", "subtitle"))
+        prefer_resolution = QCheckBox("Preferisci la risoluzione maggiore")
+        prefer_resolution.setChecked(self.settings.value("prefer_resolution", True, type=bool))
+        form.addWidget(prefer_resolution)
+        prefer_size = QCheckBox("A parità di risoluzione, preferisci il file più grande")
+        prefer_size.setChecked(self.settings.value("prefer_file_size", False, type=bool))
+        form.addWidget(prefer_size)
+        form.addWidget(titled("La dimensione del file non garantisce una qualità migliore.",
+                             "subtitle"))
+        form.addWidget(titled("Cartelle protette (immagini da conservare)", "section"))
+        protected_list = QListWidget()
+        protected_list.setMinimumHeight(95)
+        folders = [Path(p) for p in self.settings.value("protected_folders", [], type=list)]
+        for folder in folders:
+            protected_list.addItem(str(folder))
+        form.addWidget(protected_list)
+        folder_buttons = QHBoxLayout()
+        add = QPushButton("Aggiungi cartella protetta")
+
+        def add_protected() -> None:
+            chosen = QFileDialog.getExistingDirectory(dialog, "Scegli una cartella protetta")
+            if chosen and Path(chosen) not in folders:
+                folders.append(Path(chosen))
+                protected_list.addItem(chosen)
+
+        add.clicked.connect(add_protected)
+        folder_buttons.addWidget(add)
+        remove = QPushButton("Rimuovi")
+
+        def remove_protected() -> None:
+            index = protected_list.currentRow()
+            if index >= 0:
+                protected_list.takeItem(index)
+                folders.pop(index)
+
+        remove.clicked.connect(remove_protected)
+        folder_buttons.addWidget(remove)
+        form.addLayout(folder_buttons)
+        actions = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        actions.button(QDialogButtonBox.StandardButton.Ok).setText("Mostra anteprima")
+        actions.accepted.connect(dialog.accept)
+        actions.rejected.connect(dialog.reject)
+        form.addWidget(actions)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        options = SelectionOptions(prefer_resolution.isChecked(), prefer_size.isChecked(),
+                                   tuple(folders))
+        proposal = propose_selection(self.groups, options)
+        if not proposal.trash_paths:
+            QMessageBox.information(self, "Nessuna scelta sicura",
+                                    "Nessun gruppo ha un'immagine da conservare inequivocabile. "
+                                    "Puoi selezionare i file manualmente.")
+            return
+        size_mb = proposal.recoverable_bytes / 1024**2
+        answer = QMessageBox.question(
+            self, "Anteprima della selezione",
+            f"Immagini da conservare: {len(proposal.kept_paths)}\n"
+            f"File proposti per il cestino: {len(proposal.trash_paths)}\n"
+            f"Gruppi ambigui lasciati invariati: {proposal.skipped_groups}\n"
+            f"Spazio potenziale: {size_mb:.1f} MB\n\n"
+            "Applicare queste selezioni? Nessun file verrà spostato ora.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        self.settings.setValue("prefer_resolution", options.prefer_resolution)
+        self.settings.setValue("prefer_file_size", options.prefer_file_size)
+        self.settings.setValue("protected_folders", [str(p) for p in options.protected_folders])
+        self.selected_paths = set(proposal.trash_paths)
+        self.show_group(self.group_list.currentRow())
+        self.status.setText(f"{len(self.selected_paths)} file proposti per il cestino; "
+                            "controllali prima di confermare.")
+
     def trash_selected(self) -> None:
-        targets = [image.path for image, checkbox in self.checks if checkbox.isChecked()]
+        targets = list(self.selected_paths)
         if not targets:
             QMessageBox.information(self, "Nessuna selezione",
                                     "Seleziona prima le immagini da spostare nel cestino.")
             return
-        if len(targets) == len(self.checks):
+        if any(all(image.path in self.selected_paths for image in group)
+               for group in self.groups):
             QMessageBox.warning(self, "Conserva un'immagine",
-                                "Deve rimanere almeno un'immagine nel gruppo.")
+                                "Deve rimanere almeno un'immagine in ciascun gruppo.")
             return
         response = QMessageBox.question(
             self, "Conferma lo spostamento",
@@ -410,6 +529,7 @@ class MainWindow(QMainWindow):
             except OSError as exc:
                 failures.append(f"{path}: {exc}")
         self.images = [image for image in self.images if image.path not in moved]
+        self.selected_paths.difference_update(moved)
         self.refresh_groups()
         self.status.setText(f"{len(moved)} immagini nel cestino · {len(failures)} errori")
         if failures:
