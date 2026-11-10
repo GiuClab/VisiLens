@@ -155,7 +155,7 @@ class MainWindow(QMainWindow):
             button.clicked.connect(action)
             nav.addWidget(button)
         nav.addStretch()
-        nav.addWidget(titled("0.4.1 · Anteprima", "subtitle"))
+        nav.addWidget(titled("0.4.2 · Anteprima", "subtitle"))
         outer.addWidget(sidebar)
 
         layout = QVBoxLayout()
