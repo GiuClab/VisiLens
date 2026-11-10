@@ -3,7 +3,7 @@
 An open-source, cross-platform desktop application for finding **visually similar photos**.
 Inspired by the workflow of VisiPics; not affiliated with its authors.
 
-**Status: 0.3.0 — Windows-first early preview.** Windows 10/11, Python 3.10+.
+**Status: 0.3.1 — Windows-first early preview.** Windows 10/11, Python 3.10+.
 
 ## Features
 
@@ -63,6 +63,10 @@ the previews before selecting any image for the Trash.
 **Strict** in version 0.3.0 is deliberately much stricter: even small local
 changes in clothing, backgrounds or graphic elements should be rejected. Use
 Basic if you also want to discover recompressed photos that Strict may miss.
+Version 0.3.1 additionally checks the alpha (transparency) channel in Strict:
+the same artwork over a solid background versus a transparent background is
+not considered an exact visual duplicate. The SQLite cache stores alpha
+fingerprints in a new schema, so older cached RGB-only results are not reused.
 
 The current implementation uses an O(n²) similarity comparison and is aimed
 at small-to-medium libraries. Future work: indexing for large libraries,
@@ -94,5 +98,5 @@ describe the inspiration.
 VisiLens è un programma desktop open source per trovare foto duplicate o
 visivamente simili, attualmente sviluppato e distribuito per Windows. Aggiungi le cartelle, avvia la
 scansione, confronta le anteprime e scegli quali immagini spostare nel cestino.
-Nessun file viene eliminato automaticamente. La versione 0.3.0 è una prima
+Nessun file viene eliminato automaticamente. La versione 0.3.1 è una prima
 anteprima: controlla sempre le selezioni e conserva una copia dei tuoi archivi.
