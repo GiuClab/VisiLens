@@ -7,10 +7,18 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import imagehash
+import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tif", ".tiff"}
-THRESHOLDS = {"Strict": 2, "Basic": 7, "Loose": 13}
+# pHash is only a candidate filter. The RGB checks below reject visually
+# different variants that share the same shape/composition.
+THRESHOLDS = {
+    "Strict": (2, 0.025, 0.055),
+    "Basic": (7, 0.045, 0.095),
+    "Loose": (13, 0.065, 0.14),
+}
+SAMPLE_SIZE = (64, 64)
 
 
 @dataclass(frozen=True)
@@ -20,6 +28,7 @@ class ImageInfo:
     height: int
     bytes: int
     phash: imagehash.ImageHash
+    rgb_sample: bytes
 
     @property
     def pixels(self) -> int:
@@ -53,9 +62,11 @@ def inspect(path: Path) -> ImageInfo:
         image.seek(0)
         oriented = ImageOps.exif_transpose(image)
         width, height = oriented.size
-        digest = imagehash.phash(oriented.convert("RGB"))
+        rgb = oriented.convert("RGB")
+        digest = imagehash.phash(rgb)
+        sample = rgb.resize(SAMPLE_SIZE, Image.Resampling.LANCZOS).tobytes()
     return ImageInfo(path=path, width=width, height=height, bytes=path.stat().st_size,
-                     phash=digest)
+                     phash=digest, rgb_sample=sample)
 
 
 def scan(paths: Iterable[Path], progress: Callable[[int, int], None] | None = None,
@@ -75,33 +86,39 @@ def scan(paths: Iterable[Path], progress: Callable[[int, int], None] | None = No
     return images, errors
 
 
-class _UnionFind:
-    def __init__(self, size: int) -> None:
-        self.parent = list(range(size))
+def is_duplicate(first: ImageInfo, second: ImageInfo, mode: str = "Basic") -> bool:
+    """Conservative matching: composition, color and changed-area must agree.
 
-    def find(self, index: int) -> int:
-        while self.parent[index] != index:
-            self.parent[index] = self.parent[self.parent[index]]
-            index = self.parent[index]
-        return index
-
-    def union(self, a: int, b: int) -> None:
-        self.parent[self.find(a)] = self.find(b)
+    Large recolorings, new clothing and alternate backgrounds are deliberately
+    excluded, even when the pHash distance is zero. This is not crop matching.
+    """
+    if mode not in THRESHOLDS:
+        raise ValueError(f"Unknown similarity mode: {mode}")
+    phash_max, average_max, changed_max = THRESHOLDS[mode]
+    if abs(first.width / first.height - second.width / second.height) > 0.025:
+        return False
+    if first.phash - second.phash > phash_max:
+        return False
+    a = np.frombuffer(first.rgb_sample, dtype=np.uint8).astype(np.int16)
+    b = np.frombuffer(second.rgb_sample, dtype=np.uint8).astype(np.int16)
+    difference = np.abs(a - b).reshape((*SAMPLE_SIZE, 3))
+    average = float(difference.mean()) / 255
+    changed_fraction = float(np.mean(np.max(difference, axis=2) > 32))
+    return average <= average_max and changed_fraction <= changed_max
 
 
 def group_similar(images: list[ImageInfo], mode: str = "Basic") -> list[list[ImageInfo]]:
-    """Connected components of hash-neighbor graph; groups may contain transitive matches."""
+    """Conservative complete-link groups, with no indirect A-B-C matches."""
     if mode not in THRESHOLDS:
         raise ValueError(f"Unknown similarity mode: {mode}")
-    threshold = THRESHOLDS[mode]
-    uf = _UnionFind(len(images))
-    for i, first in enumerate(images):
-        for j in range(i + 1, len(images)):
-            if first.phash - images[j].phash <= threshold:
-                uf.union(i, j)
-    groups: dict[int, list[ImageInfo]] = {}
-    for i, item in enumerate(images):
-        groups.setdefault(uf.find(i), []).append(item)
-    result = [sorted(group, key=lambda x: (-x.pixels, -x.bytes, str(x.path)))
-              for group in groups.values() if len(group) > 1]
+    ranked = sorted(images, key=lambda x: (-x.pixels, -x.bytes, str(x.path)))
+    groups: list[list[ImageInfo]] = []
+    for image in ranked:
+        for group in groups:
+            if all(is_duplicate(image, other, mode) for other in group):
+                group.append(image)
+                break
+        else:
+            groups.append([image])
+    result = [group for group in groups if len(group) > 1]
     return sorted(result, key=lambda group: str(group[0].path).casefold())
