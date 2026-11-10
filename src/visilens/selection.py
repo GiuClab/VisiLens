@@ -11,8 +11,9 @@ from .core import ImageInfo
 @dataclass(frozen=True)
 class SelectionOptions:
     prefer_resolution: bool = True
-    prefer_file_size: bool = False
+    prefer_file_size: bool = True
     protected_folders: tuple[Path, ...] = ()
+    resolve_ties: bool = True
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,7 @@ class SelectionProposal:
     kept_paths: frozenset[Path]
     skipped_groups: int
     recoverable_bytes: int
+    tied_groups: int = 0
 
 
 def _inside(path: Path, folder: Path) -> bool:
@@ -36,13 +38,14 @@ def propose_selection(
 ) -> SelectionProposal:
     """Recommend files to select, never delete anything.
 
-    Each group needs one unambiguous winner. Protected folders always win over
-    other locations, but a tie among protected candidates is skipped unless
-    another enabled criterion resolves it. File size is not a quality estimate.
+    Protected folders, resolution and optionally file size establish priorities.
+    By default, remaining ties use a stable path ordering. The resulting choice
+    is a proposal for manual review, NOT a claim of superior image quality.
     """
     trash: set[Path] = set()
     kept: set[Path] = set()
     skipped = 0
+    tied = 0
     bytes_saved = 0
     for group in groups:
         if len(group) < 2:
@@ -59,12 +62,15 @@ def propose_selection(
             max_bytes = max(image.bytes for image in candidates)
             candidates = [image for image in candidates if image.bytes == max_bytes]
         if len(candidates) != 1:
-            skipped += 1
-            continue
+            if not options.resolve_ties:
+                skipped += 1
+                continue
+            tied += 1
+            candidates.sort(key=lambda image: str(image.path).casefold())
         winner = candidates[0]
         kept.add(winner.path)
         for image in group:
             if image.path != winner.path:
                 trash.add(image.path)
                 bytes_saved += image.bytes
-    return SelectionProposal(frozenset(trash), frozenset(kept), skipped, bytes_saved)
+    return SelectionProposal(frozenset(trash), frozenset(kept), skipped, bytes_saved, tied)
