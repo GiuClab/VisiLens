@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,9 +15,11 @@ EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tif", ".tiff"}
 # pHash is only a candidate filter. The RGB checks below reject visually
 # different variants that share the same shape/composition.
 THRESHOLDS = {
-    "Strict": (2, 0.025, 0.055),
-    "Basic": (7, 0.045, 0.095),
-    "Loose": (13, 0.065, 0.14),
+    # Strict intentionally behaves as a near-identical image detector, not a
+    # "same subject" detector. Small outfit/background changes must not match.
+    "Strict": (2, 0.006, 0.005, 12),
+    "Basic": (7, 0.045, 0.095, 32),
+    "Loose": (13, 0.065, 0.14, 32),
 }
 SAMPLE_SIZE = (64, 64)
 
@@ -69,20 +72,75 @@ def inspect(path: Path) -> ImageInfo:
                      phash=digest, rgb_sample=sample)
 
 
+class ScanCache:
+    """Optional persistent image fingerprints. The original files are never modified."""
+
+    def __init__(self, path: Path) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.connection = sqlite3.connect(path)
+        self.connection.execute("""
+            CREATE TABLE IF NOT EXISTS fingerprints (
+                path TEXT PRIMARY KEY, size INTEGER, mtime_ns INTEGER,
+                width INTEGER, height INTEGER, phash TEXT, rgb_sample BLOB,
+                algorithm INTEGER NOT NULL
+            )
+        """)
+
+    def get(self, path: Path) -> ImageInfo | None:
+        stat = path.stat()
+        row = self.connection.execute(
+            "SELECT width, height, phash, rgb_sample FROM fingerprints "
+            "WHERE path=? AND size=? AND mtime_ns=? AND algorithm=3",
+            (str(path.resolve()), stat.st_size, stat.st_mtime_ns),
+        ).fetchone()
+        if row is None or len(row[3]) != SAMPLE_SIZE[0] * SAMPLE_SIZE[1] * 3:
+            return None
+        return ImageInfo(path, row[0], row[1], stat.st_size,
+                         imagehash.hex_to_hash(row[2]), row[3])
+
+    def put(self, image: ImageInfo) -> None:
+        stat = image.path.stat()
+        self.connection.execute(
+            "INSERT OR REPLACE INTO fingerprints VALUES (?, ?, ?, ?, ?, ?, ?, 3)",
+            (str(image.path.resolve()), stat.st_size, stat.st_mtime_ns,
+             image.width, image.height, str(image.phash), image.rgb_sample),
+        )
+
+    def close(self) -> None:
+        self.connection.commit()
+        self.connection.close()
+
+
 def scan(paths: Iterable[Path], progress: Callable[[int, int], None] | None = None,
-         cancelled: Callable[[], bool] | None = None) -> tuple[list[ImageInfo], list[str]]:
+         cancelled: Callable[[], bool] | None = None,
+         cache_path: Path | None = None) -> tuple[list[ImageInfo], list[str]]:
     candidates = discover(paths)
     images: list[ImageInfo] = []
     errors: list[str] = []
-    for index, path in enumerate(candidates, 1):
-        if cancelled and cancelled():
-            break
-        try:
-            images.append(inspect(path))
-        except (OSError, ValueError, UnidentifiedImageError) as exc:
-            errors.append(f"{path}: {exc}")
-        if progress:
-            progress(index, len(candidates))
+    cache: ScanCache | None = None
+    try:
+        if cache_path is not None:
+            try:
+                cache = ScanCache(cache_path)
+            except (OSError, sqlite3.DatabaseError) as exc:
+                errors.append(f"Cache non disponibile: {exc}")
+        for index, path in enumerate(candidates, 1):
+            if cancelled and cancelled():
+                break
+            try:
+                info = cache.get(path) if cache is not None else None
+                if info is None:
+                    info = inspect(path)
+                    if cache is not None:
+                        cache.put(info)
+                images.append(info)
+            except (OSError, ValueError, UnidentifiedImageError, sqlite3.DatabaseError) as exc:
+                errors.append(f"{path}: {exc}")
+            if progress:
+                progress(index, len(candidates))
+    finally:
+        if cache is not None:
+            cache.close()
     return images, errors
 
 
@@ -94,7 +152,7 @@ def is_duplicate(first: ImageInfo, second: ImageInfo, mode: str = "Basic") -> bo
     """
     if mode not in THRESHOLDS:
         raise ValueError(f"Unknown similarity mode: {mode}")
-    phash_max, average_max, changed_max = THRESHOLDS[mode]
+    phash_max, average_max, changed_max, pixel_tolerance = THRESHOLDS[mode]
     if abs(first.width / first.height - second.width / second.height) > 0.025:
         return False
     if first.phash - second.phash > phash_max:
@@ -103,7 +161,7 @@ def is_duplicate(first: ImageInfo, second: ImageInfo, mode: str = "Basic") -> bo
     b = np.frombuffer(second.rgb_sample, dtype=np.uint8).astype(np.int16)
     difference = np.abs(a - b).reshape((*SAMPLE_SIZE, 3))
     average = float(difference.mean()) / 255
-    changed_fraction = float(np.mean(np.max(difference, axis=2) > 32))
+    changed_fraction = float(np.mean(np.max(difference, axis=2) > pixel_tolerance))
     return average <= average_max and changed_fraction <= changed_max
 
 
