@@ -16,6 +16,18 @@ def test_discover_deduplicates_overlapping_roots(tmp_path: Path) -> None:
     assert discover([folder, image, folder]) == [image]
 
 
+@pytest.mark.parametrize("suffix", [".jfif", ".jfi", ".jif", ".JFIF"])
+def test_jfif_family_is_discovered_and_decoded(tmp_path: Path, suffix: str) -> None:
+    """JPEG bytes are valid under every supported JFIF-family extension."""
+    path = tmp_path / f"photo{suffix}"
+    Image.new("RGB", (64, 48), "orange").save(path, format="JPEG")
+    assert discover([tmp_path]) == [path]
+    image, errors = scan([tmp_path])
+    assert not errors
+    assert len(image) == 1
+    assert (image[0].width, image[0].height) == (64, 48)
+
+
 def test_same_image_in_different_formats_is_similar(tmp_path: Path) -> None:
     original = Image.new("RGB", (160, 120), "white")
     drawing = ImageDraw.Draw(original)
