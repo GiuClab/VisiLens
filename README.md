@@ -3,7 +3,7 @@
 An open-source, cross-platform desktop application for finding **visually similar photos**.
 Inspired by the workflow of VisiPics; not affiliated with its authors.
 
-**Status: 0.3.1 — Windows-first early preview.** Windows 10/11, Python 3.10+.
+**Status: 0.4.0 — Windows-first early preview.** Windows 10/11, Python 3.10+.
 
 ## Features
 
@@ -18,6 +18,8 @@ Inspired by the workflow of VisiPics; not affiliated with its authors.
   group details and scan statistics.
 - SQLite fingerprint cache on Windows in `%LOCALAPPDATA%\\VisiLens` to speed up
   subsequent scans of unchanged files (paths and image fingerprints are stored locally).
+- Optional **Selezione intelligente** for Strict groups, with resolution preference,
+  opt-in file-size tiebreaker, protected folders and a review summary.
 
 ## Installation
 
@@ -42,6 +44,17 @@ If `visilens` is not on your PATH, run `python -m visilens.app`.
 3. Select a group and review the image previews and proposed selections.
 4. Adjust checkboxes, leaving at least one image unchecked.
 5. Click **Move checked images to Trash** and confirm.
+
+### Selezione intelligente (Auto-Select)
+
+After a **Strict** scan, click **Selezione intelligente** to choose your
+preferences. The feature selects files across eligible groups but **does not
+move or delete them**. Every group must have one unambiguous keeper; uncertain
+groups are left untouched. The highest-resolution image is preferred by
+default. A larger file is *not* necessarily better quality, so file-size
+tiebreaking is optional. Add protected directories to prioritize originals
+from those locations. Review the resulting checkboxes, use **Annulla tutte le
+selezioni** to undo, and confirm separately before moving anything to Trash.
 
 **Important:** Check every group before deleting. Visually similar files may be
 different photos. The suggested keeper is based on pixel count, not artistic
@@ -98,5 +111,5 @@ describe the inspiration.
 VisiLens è un programma desktop open source per trovare foto duplicate o
 visivamente simili, attualmente sviluppato e distribuito per Windows. Aggiungi le cartelle, avvia la
 scansione, confronta le anteprime e scegli quali immagini spostare nel cestino.
-Nessun file viene eliminato automaticamente. La versione 0.3.1 è una prima
+Nessun file viene eliminato automaticamente. La versione 0.4.0 è una prima
 anteprima: controlla sempre le selezioni e conserva una copia dei tuoi archivi.
