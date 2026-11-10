@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -101,3 +102,50 @@ def test_no_transitive_matches(tmp_path: Path) -> None:
     groups = group_similar(variants, "Loose")
     assert all(all(is_duplicate(a, b, "Loose") for a in group for b in group)
                for group in groups)
+
+
+@pytest.mark.parametrize("change", ["shirt", "background"])
+def test_strict_rejects_small_local_changes(tmp_path: Path, change: str) -> None:
+    """Even small edits may be meaningful; Strict must not group them."""
+    original = Image.new("RGB", (300, 300), "#e6e7e9")
+    draw = ImageDraw.Draw(original)
+    draw.ellipse((70, 45, 230, 205), fill="#ad7650")
+    draw.rectangle((100, 205, 200, 265), fill="#303030")
+    altered = original.copy()
+    redraw = ImageDraw.Draw(altered)
+    if change == "shirt":
+        redraw.rectangle((125, 220, 174, 250), fill="#6a82bd")
+    else:
+        redraw.rectangle((10, 10, 58, 40), fill="#6a82bd")
+    a, b = tmp_path / "original.png", tmp_path / "changed.png"
+    original.save(a)
+    altered.save(b)
+    assert not is_duplicate(inspect(a), inspect(b), "Strict")
+
+
+def test_cache_reuses_unchanged_files_and_invalidates_edits(tmp_path: Path, monkeypatch) -> None:
+    from visilens import core
+
+    source = tmp_path / "picture.png"
+    cache = tmp_path / "fingerprints.sqlite3"
+    Image.new("RGB", (80, 80), "red").save(source)
+    real_inspect = core.inspect
+    calls = []
+
+    def counted(path):
+        calls.append(path)
+        return real_inspect(path)
+
+    monkeypatch.setattr(core, "inspect", counted)
+    first, errors = scan([source], cache_path=cache)
+    second, errors_again = scan([source], cache_path=cache)
+    assert not errors and not errors_again
+    assert first == second
+    assert len(calls) == 1
+    Image.new("RGB", (80, 80), "blue").save(source)
+    stat = source.stat()
+    os.utime(source, ns=(stat.st_atime_ns, stat.st_mtime_ns + 2_000_000_000))
+    third, errors_last = scan([source], cache_path=cache)
+    assert not errors_last
+    assert len(calls) == 2
+    assert third[0].rgb_sample != first[0].rgb_sample
