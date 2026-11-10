@@ -32,6 +32,7 @@ class ImageInfo:
     bytes: int
     phash: imagehash.ImageHash
     rgb_sample: bytes
+    alpha_sample: bytes
 
     @property
     def pixels(self) -> int:
@@ -65,11 +66,13 @@ def inspect(path: Path) -> ImageInfo:
         image.seek(0)
         oriented = ImageOps.exif_transpose(image)
         width, height = oriented.size
-        rgb = oriented.convert("RGB")
+        rgba = oriented.convert("RGBA")
+        rgb = rgba.convert("RGB")
         digest = imagehash.phash(rgb)
         sample = rgb.resize(SAMPLE_SIZE, Image.Resampling.LANCZOS).tobytes()
+        alpha = rgba.getchannel("A").resize(SAMPLE_SIZE, Image.Resampling.LANCZOS).tobytes()
     return ImageInfo(path=path, width=width, height=height, bytes=path.stat().st_size,
-                     phash=digest, rgb_sample=sample)
+                     phash=digest, rgb_sample=sample, alpha_sample=alpha)
 
 
 class ScanCache:
@@ -79,31 +82,33 @@ class ScanCache:
         path.parent.mkdir(parents=True, exist_ok=True)
         self.connection = sqlite3.connect(path)
         self.connection.execute("""
-            CREATE TABLE IF NOT EXISTS fingerprints (
+            CREATE TABLE IF NOT EXISTS fingerprints_v4 (
                 path TEXT PRIMARY KEY, size INTEGER, mtime_ns INTEGER,
-                width INTEGER, height INTEGER, phash TEXT, rgb_sample BLOB,
-                algorithm INTEGER NOT NULL
+                width INTEGER, height INTEGER, phash TEXT,
+                rgb_sample BLOB, alpha_sample BLOB
             )
         """)
 
     def get(self, path: Path) -> ImageInfo | None:
         stat = path.stat()
         row = self.connection.execute(
-            "SELECT width, height, phash, rgb_sample FROM fingerprints "
-            "WHERE path=? AND size=? AND mtime_ns=? AND algorithm=3",
+            "SELECT width, height, phash, rgb_sample, alpha_sample FROM fingerprints_v4 "
+            "WHERE path=? AND size=? AND mtime_ns=?",
             (str(path.resolve()), stat.st_size, stat.st_mtime_ns),
         ).fetchone()
-        if row is None or len(row[3]) != SAMPLE_SIZE[0] * SAMPLE_SIZE[1] * 3:
+        if (row is None or len(row[3]) != SAMPLE_SIZE[0] * SAMPLE_SIZE[1] * 3
+                or len(row[4]) != SAMPLE_SIZE[0] * SAMPLE_SIZE[1]):
             return None
         return ImageInfo(path, row[0], row[1], stat.st_size,
-                         imagehash.hex_to_hash(row[2]), row[3])
+                         imagehash.hex_to_hash(row[2]), row[3], row[4])
 
     def put(self, image: ImageInfo) -> None:
         stat = image.path.stat()
         self.connection.execute(
-            "INSERT OR REPLACE INTO fingerprints VALUES (?, ?, ?, ?, ?, ?, ?, 3)",
+            "INSERT OR REPLACE INTO fingerprints_v4 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (str(image.path.resolve()), stat.st_size, stat.st_mtime_ns,
-             image.width, image.height, str(image.phash), image.rgb_sample),
+             image.width, image.height, str(image.phash), image.rgb_sample,
+             image.alpha_sample),
         )
 
     def close(self) -> None:
@@ -157,6 +162,13 @@ def is_duplicate(first: ImageInfo, second: ImageInfo, mode: str = "Basic") -> bo
         return False
     if first.phash - second.phash > phash_max:
         return False
+    if mode == "Strict":
+        alpha_a = np.frombuffer(first.alpha_sample, dtype=np.uint8).astype(np.int16)
+        alpha_b = np.frombuffer(second.alpha_sample, dtype=np.uint8).astype(np.int16)
+        # Transparent backgrounds and fully opaque backgrounds are distinct
+        # assets even if their flattened RGB data happens to match.
+        if float(np.mean(np.abs(alpha_a - alpha_b) > 8)) > 0.005:
+            return False
     a = np.frombuffer(first.rgb_sample, dtype=np.uint8).astype(np.int16)
     b = np.frombuffer(second.rgb_sample, dtype=np.uint8).astype(np.int16)
     difference = np.abs(a - b).reshape((*SAMPLE_SIZE, 3))
