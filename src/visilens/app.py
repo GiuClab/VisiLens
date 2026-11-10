@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSlider,
     QSplitter,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -162,7 +163,7 @@ class MainWindow(QMainWindow):
             button.clicked.connect(action)
             nav.addWidget(button)
         nav.addStretch()
-        nav.addWidget(titled("0.5.0 · Anteprima", "subtitle"))
+        nav.addWidget(titled("0.5.1 · Anteprima", "subtitle"))
         outer.addWidget(sidebar)
 
         layout = QVBoxLayout()
@@ -240,10 +241,40 @@ class MainWindow(QMainWindow):
         splitter.addWidget(left)
 
         right, right_layout = card()
-        right.setMinimumWidth(490)
+        right.setMinimumWidth(500)
         right_layout.addWidget(titled("Dettagli del gruppo", "section"))
         self.group_title = titled("Nessun gruppo selezionato", "subtitle")
         right_layout.addWidget(self.group_title)
+        mode_buttons = QHBoxLayout()
+        self.view_grid_button = QPushButton("▦  Griglia")
+        self.view_compare_button = QPushButton("◫  Confronto")
+        self.view_grid_button.clicked.connect(lambda: self.set_view(0))
+        self.view_compare_button.clicked.connect(lambda: self.set_view(1))
+        mode_buttons.addWidget(self.view_grid_button)
+        mode_buttons.addWidget(self.view_compare_button)
+        mode_buttons.addStretch()
+        right_layout.addLayout(mode_buttons)
+        self.content_stack = QStackedWidget()
+        right_layout.addWidget(self.content_stack, 1)
+
+        grid_page = QWidget()
+        grid_layout = QVBoxLayout(grid_page)
+        grid_layout.setContentsMargins(0, 0, 0, 0)
+        grid_layout.addWidget(titled("Tutte le immagini del gruppo", "section"))
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        self.preview = QWidget()
+        self.preview_layout = QGridLayout(self.preview)
+        self.preview_layout.setContentsMargins(6, 6, 6, 6)
+        self.preview_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.preview_layout.setSpacing(10)
+        scroll.setWidget(self.preview)
+        grid_layout.addWidget(scroll, 1)
+        self.content_stack.addWidget(grid_page)
+
+        compare_page = QWidget()
+        compare_layout = QVBoxLayout(compare_page)
+        compare_layout.setContentsMargins(0, 0, 0, 0)
         compare_controls = QHBoxLayout()
         compare_controls.addWidget(titled("Confronta A", "subtitle"))
         self.compare_a = QComboBox()
@@ -256,26 +287,21 @@ class MainWindow(QMainWindow):
         enlarge = QPushButton("⤢  Ingrandisci")
         enlarge.clicked.connect(self.open_comparison)
         compare_controls.addWidget(enlarge)
-        right_layout.addLayout(compare_controls)
+        compare_layout.addLayout(compare_controls)
         compare_preview = QHBoxLayout()
         self.compare_image_a = QLabel()
         self.compare_image_b = QLabel()
         for preview in (self.compare_image_a, self.compare_image_b):
-            preview.setFixedHeight(155)
-            preview.setMinimumWidth(150)
+            preview.setFixedSize(205, 275)
             preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
             preview.setStyleSheet("background: #eef1f7; border-radius: 9px;")
             compare_preview.addWidget(preview, 1)
-        right_layout.addLayout(compare_preview)
-        right_layout.addWidget(titled("Tutte le immagini del gruppo", "section"))
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        self.preview = QWidget()
-        self.preview_layout = QGridLayout(self.preview)
-        self.preview_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.preview_layout.setSpacing(10)
-        scroll.setWidget(self.preview)
-        right_layout.addWidget(scroll)
+        compare_layout.addLayout(compare_preview)
+        compare_layout.addWidget(titled("Scegli due immagini e usa Ingrandisci per "
+                                        "vedere i dettagli.", "subtitle"))
+        compare_layout.addStretch(1)
+        self.content_stack.addWidget(compare_page)
+        self.set_view(0)
         self.trash_button = QPushButton("♲  Sposta selezionate nel cestino")
         self.trash_button.setObjectName("danger")
         self.trash_button.clicked.connect(self.trash_selected)
@@ -291,6 +317,14 @@ class MainWindow(QMainWindow):
         self.checks: list[tuple[ImageInfo, object]] = []
         self.update_statistics()
         self.auto_button.setEnabled(False)
+
+    def set_view(self, index: int) -> None:
+        self.content_stack.setCurrentIndex(index)
+        self.view_grid_button.setObjectName("primary" if index == 0 else "")
+        self.view_compare_button.setObjectName("primary" if index == 1 else "")
+        for button in (self.view_grid_button, self.view_compare_button):
+            button.style().unpolish(button)
+            button.style().polish(button)
 
     @staticmethod
     def stat_card(layout: QHBoxLayout, title: str) -> QLabel:
@@ -383,13 +417,14 @@ class MainWindow(QMainWindow):
         self.group_badges = []
         for index, group in enumerate(self.groups, 1):
             item = QListWidgetItem()
-            item.setSizeHint(QSize(440, 112))
+            item.setSizeHint(QSize(340, 92))
             self.group_list.addItem(item)
             widget = QWidget()
             row = QHBoxLayout(widget)
-            row.setContentsMargins(8, 4, 8, 4)
+            row.setContentsMargins(4, 4, 4, 4)
+            row.setSpacing(4)
             for photo in group[:4]:
-                row.addWidget(thumbnail(photo.path, 76, 82))
+                row.addWidget(thumbnail(photo.path, 50, 65))
             if len(group) > 4:
                 row.addWidget(titled(f"+{len(group) - 4}", "tag"))
             information = QVBoxLayout()
@@ -489,7 +524,7 @@ class MainWindow(QMainWindow):
             if pixmap.isNull():
                 view.setText("Anteprima non disponibile")
                 continue
-            view.setPixmap(pixmap.scaled(220, 145, Qt.AspectRatioMode.KeepAspectRatio,
+            view.setPixmap(pixmap.scaled(190, 250, Qt.AspectRatioMode.KeepAspectRatio,
                                          Qt.TransformationMode.SmoothTransformation))
 
     def open_comparison(self) -> None:
