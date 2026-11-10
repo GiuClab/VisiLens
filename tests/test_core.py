@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from PIL import Image, ImageDraw
 
-from visilens.core import discover, group_similar, inspect, scan
+from visilens.core import discover, group_similar, inspect, is_duplicate, scan
 
 
 def test_discover_deduplicates_overlapping_roots(tmp_path: Path) -> None:
@@ -52,3 +52,52 @@ def test_cancel_stops_before_loading(tmp_path: Path) -> None:
     Image.new("RGB", (20, 20), "green").save(tmp_path / "a.png")
     images, errors = scan([tmp_path], cancelled=lambda: True)
     assert images == [] and errors == []
+
+
+@pytest.mark.parametrize("mode", ["Strict", "Basic", "Loose"])
+def test_recolored_logo_is_not_a_duplicate(tmp_path: Path, mode: str) -> None:
+    """Identical shapes with inverted colors are a design variant, not a duplicate."""
+    dark = Image.new("RGB", (200, 200), "black")
+    light = Image.new("RGB", (200, 200), "white")
+    ImageDraw.Draw(dark).ellipse((35, 35, 165, 165), fill="gold")
+    ImageDraw.Draw(light).ellipse((35, 35, 165, 165), fill="darkorange")
+    a, b = tmp_path / "dark.png", tmp_path / "light.png"
+    dark.save(a)
+    light.save(b)
+    assert not is_duplicate(inspect(a), inspect(b), mode)
+
+
+@pytest.mark.parametrize("mode", ["Strict", "Basic", "Loose"])
+def test_changed_clothing_is_not_a_duplicate(tmp_path: Path, mode: str) -> None:
+    """A repeated character silhouette with altered outfit is a distinct image."""
+    coat = Image.new("RGB", (160, 240), "#eeeeee")
+    shirt = coat.copy()
+    for image, outfit in ((coat, "#65402c"), (shirt, "#101010")):
+        draw = ImageDraw.Draw(image)
+        draw.ellipse((45, 15, 115, 85), fill="#b47b4c")
+        draw.rectangle((42, 85, 118, 175), fill=outfit)
+        draw.rectangle((48, 175, 71, 225), fill="#444444")
+        draw.rectangle((89, 175, 112, 225), fill="#444444")
+    a, b = tmp_path / "coat.png", tmp_path / "shirt.png"
+    coat.save(a)
+    shirt.save(b)
+    assert not is_duplicate(inspect(a), inspect(b), mode)
+
+
+def test_no_transitive_matches(tmp_path: Path) -> None:
+    """A single group must not silently link unrelated endpoints through B."""
+    base = Image.new("RGB", (160, 160), "white")
+    ImageDraw.Draw(base).rectangle((30, 30, 130, 130), fill="#353535")
+    variants = []
+    for index, box in enumerate(((0, 0, 20, 20), (0, 0, 20, 20), (135, 135, 155, 155))):
+        image = base.copy()
+        if index >= 1:
+            ImageDraw.Draw(image).rectangle((0, 0, 20, 20), fill="#777777")
+        if index == 2:
+            ImageDraw.Draw(image).rectangle(box, fill="#777777")
+        path = tmp_path / f"variant-{index}.png"
+        image.save(path)
+        variants.append(inspect(path))
+    groups = group_similar(variants, "Loose")
+    assert all(all(is_duplicate(a, b, "Loose") for a in group for b in group)
+               for group in groups)
