@@ -2,18 +2,22 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
+from PySide6.QtCore import QObject, QSize, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QListWidget,
+    QListWidgetItem,
     QMainWindow,
     QMessageBox,
     QProgressBar,
@@ -26,6 +30,60 @@ from PySide6.QtWidgets import (
 from send2trash import send2trash
 
 from .core import ImageInfo, group_similar, scan
+
+STYLE = """
+QMainWindow, QWidget#root { background: #f4f5fa; }
+QWidget { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #252733; }
+QFrame#card { background: white; border: 1px solid #e0e4ed; border-radius: 14px; }
+QFrame#sidebar { background: #e9edf8; border: none; border-radius: 16px; }
+QLabel#heading { font-size: 27px; font-weight: 750; }
+QLabel#subtitle { color: #606779; font-size: 13px; }
+QLabel#section { font-size: 17px; font-weight: 700; }
+QLabel#metric { font-size: 27px; font-weight: 750; }
+QPushButton { background: white; border: 1px solid #d5dbe8; border-radius: 9px;
+              padding: 9px 13px; font-weight: 600; }
+QPushButton:hover { background: #ecf1ff; border-color: #9aacdf; }
+QPushButton#primary { background: #3858c9; color: white; border: none; padding: 12px 16px; }
+QPushButton#primary:hover { background: #2e49af; }
+QPushButton#danger { background: #fff3f3; color: #a52323; border-color: #efc0c0; }
+QPushButton#nav { background: transparent; border: none; text-align: left; padding: 12px; }
+QPushButton#nav:hover { background: #d6e0f8; }
+QComboBox { background: white; border: 1px solid #d5dbe8; border-radius: 8px; padding: 8px; }
+QListWidget { border: none; background: white; border-radius: 10px; outline: none; }
+QListWidget::item { padding: 8px; border-bottom: 1px solid #eef0f5; }
+QListWidget::item:selected { background: #dce6ff; color: #203d96; border-radius: 8px; }
+QScrollArea { border: none; background: transparent; }
+QProgressBar { background: #e1e5ef; border: none; border-radius: 5px; height: 8px; }
+QProgressBar::chunk { background: #4c6de2; border-radius: 5px; }
+"""
+
+
+def titled(text: str, kind: str) -> QLabel:
+    widget = QLabel(text)
+    widget.setObjectName(kind)
+    return widget
+
+
+def card() -> tuple[QFrame, QVBoxLayout]:
+    frame = QFrame()
+    frame.setObjectName("card")
+    layout = QVBoxLayout(frame)
+    layout.setContentsMargins(16, 14, 16, 14)
+    layout.setSpacing(10)
+    return frame, layout
+
+
+def thumbnail(path: Path, width: int, height: int) -> QLabel:
+    preview = QLabel()
+    preview.setFixedSize(width, height)
+    preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    preview.setStyleSheet("background: #edf0f6; border-radius: 8px;")
+    pixmap = QPixmap(str(path))
+    if not pixmap.isNull():
+        preview.setPixmap(pixmap.scaled(width - 6, height - 6,
+                                        Qt.AspectRatioMode.KeepAspectRatio,
+                                        Qt.TransformationMode.SmoothTransformation))
+    return preview
 
 
 class ScanWorker(QObject):
@@ -45,8 +103,10 @@ class ScanWorker(QObject):
     @Slot()
     def run(self) -> None:
         try:
+            base = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / ".cache")))
+            cache_path = base / "VisiLens" / "scan-cache.sqlite3"
             images, errors = scan(self.folders, lambda n, total: self.progress.emit(n, total),
-                                  lambda: self._cancelled)
+                                  lambda: self._cancelled, cache_path=cache_path)
             self.complete.emit(images, errors)
         except Exception as exc:  # noqa: BLE001 — report unexpected worker errors to GUI
             self.failed.emit(str(exc))
@@ -57,8 +117,10 @@ class ScanWorker(QObject):
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("VisiLens — Visual Duplicate Finder")
-        self.resize(1120, 740)
+        self.setWindowTitle("VisiLens — Trova le foto duplicate")
+        self.resize(1420, 850)
+        self.setMinimumSize(1060, 650)
+        self.setStyleSheet(STYLE)
         self.folders: list[Path] = []
         self.images: list[ImageInfo] = []
         self.groups: list[list[ImageInfo]] = []
@@ -66,47 +128,94 @@ class MainWindow(QMainWindow):
         self.worker: ScanWorker | None = None
 
         root = QWidget()
+        root.setObjectName("root")
         self.setCentralWidget(root)
-        layout = QVBoxLayout(root)
-        toolbar = QHBoxLayout()
-        layout.addLayout(toolbar)
-        add = QPushButton("+ Add folder")
+        outer = QHBoxLayout(root)
+        outer.setContentsMargins(12, 12, 12, 12)
+        outer.setSpacing(16)
+        sidebar = QFrame()
+        sidebar.setObjectName("sidebar")
+        sidebar.setFixedWidth(190)
+        nav = QVBoxLayout(sidebar)
+        nav.setContentsMargins(12, 24, 12, 15)
+        nav.addWidget(titled("◈  VisiLens", "section"))
+        nav.addSpacing(22)
+        for caption, action in (("▱   Cartelle", self.add_folder),
+                                ("◷   Scansioni", self.start_scan),
+                                ("▢   Duplicati", lambda: self.group_list.setFocus()),
+                                ("⚙   Impostazioni", lambda: self.mode.setFocus())):
+            button = QPushButton(caption)
+            button.setObjectName("nav")
+            button.clicked.connect(action)
+            nav.addWidget(button)
+        nav.addStretch()
+        nav.addWidget(titled("0.3.0 · Anteprima", "subtitle"))
+        outer.addWidget(sidebar)
+
+        layout = QVBoxLayout()
+        layout.setSpacing(14)
+        outer.addLayout(layout, 1)
+        header = QHBoxLayout()
+        heading = QVBoxLayout()
+        heading.addWidget(titled("Trova le foto duplicate", "heading"))
+        heading.addWidget(titled("Scansiona le cartelle, confronta le immagini e scegli cosa conservare.",
+                                 "subtitle"))
+        header.addLayout(heading, 1)
+        add = QPushButton("＋  Aggiungi cartella")
+        add.setObjectName("primary")
         add.clicked.connect(self.add_folder)
-        toolbar.addWidget(add)
-        self.start_button = QPushButton("Scan")
+        header.addWidget(add)
+        layout.addLayout(header)
+
+        controls, toolbar_layout = card()
+        toolbar = QHBoxLayout()
+        toolbar_layout.addLayout(toolbar)
+        self.folder_list = QListWidget()
+        self.folder_list.setMinimumWidth(240)
+        self.folder_list.setMaximumHeight(82)
+        toolbar.addWidget(self.folder_list, 3)
+        remove = QPushButton("Rimuovi cartella")
+        remove.clicked.connect(self.remove_folder)
+        toolbar.addWidget(remove)
+        toolbar.addWidget(titled("Somiglianza", "subtitle"))
+        self.mode = QComboBox()
+        self.mode.addItems(["Strict", "Basic", "Loose"])
+        self.mode.setCurrentText("Strict")
+        self.mode.currentTextChanged.connect(self.refresh_groups)
+        toolbar.addWidget(self.mode)
+        self.start_button = QPushButton("▶  Avvia scansione")
+        self.start_button.setObjectName("primary")
         self.start_button.clicked.connect(self.start_scan)
         toolbar.addWidget(self.start_button)
-        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button = QPushButton("Interrompi")
         self.cancel_button.setEnabled(False)
         self.cancel_button.clicked.connect(self.cancel_scan)
         toolbar.addWidget(self.cancel_button)
-        toolbar.addWidget(QLabel("Similarity:"))
-        self.mode = QComboBox()
-        self.mode.addItems(["Strict", "Basic", "Loose"])
-        self.mode.setCurrentText("Basic")
-        self.mode.currentTextChanged.connect(self.refresh_groups)
-        toolbar.addWidget(self.mode)
-        toolbar.addStretch()
+        layout.addWidget(controls)
+
+        stats = QHBoxLayout()
+        self.metric_images = self.stat_card(stats, "▧  Immagini analizzate")
+        self.metric_duplicates = self.stat_card(stats, "▢  Duplicati trovati")
+        self.metric_space = self.stat_card(stats, "◉  Spazio potenziale")
+        layout.addLayout(stats)
 
         splitter = QSplitter()
         layout.addWidget(splitter, 1)
-        left = QWidget()
-        left_layout = QVBoxLayout(left)
-        left_layout.addWidget(QLabel("Folders"))
-        self.folder_list = QListWidget()
-        left_layout.addWidget(self.folder_list, 1)
-        remove = QPushButton("Remove selected folder")
-        remove.clicked.connect(self.remove_folder)
-        left_layout.addWidget(remove)
-        left_layout.addWidget(QLabel("Similar image groups"))
+        left, left_layout = card()
+        left_layout.addWidget(titled("Gruppi di duplicati", "section"))
+        left_layout.addWidget(titled("Seleziona un gruppo per confrontare le immagini.", "subtitle"))
         self.group_list = QListWidget()
         self.group_list.currentRowChanged.connect(self.show_group)
-        left_layout.addWidget(self.group_list, 2)
+        left_layout.addWidget(self.group_list, 1)
         splitter.addWidget(left)
 
-        right = QWidget()
-        right_layout = QVBoxLayout(right)
-        note = QLabel("Highest resolution is shown first. Nothing is selected for deletion by default.")
+        right, right_layout = card()
+        right.setMinimumWidth(380)
+        right_layout.addWidget(titled("Dettagli del gruppo", "section"))
+        self.group_title = titled("Nessun gruppo selezionato", "subtitle")
+        right_layout.addWidget(self.group_title)
+        note = titled("Nessuna immagine viene selezionata automaticamente per il cestino.",
+                      "subtitle")
         note.setWordWrap(True)
         right_layout.addWidget(note)
         scroll = QScrollArea()
@@ -116,18 +225,36 @@ class MainWindow(QMainWindow):
         self.preview_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         scroll.setWidget(self.preview)
         right_layout.addWidget(scroll)
-        self.trash_button = QPushButton("Move checked images to Trash…")
+        self.trash_button = QPushButton("♲  Sposta selezionate nel cestino")
+        self.trash_button.setObjectName("danger")
         self.trash_button.clicked.connect(self.trash_selected)
         right_layout.addWidget(self.trash_button)
         splitter.addWidget(right)
-        splitter.setSizes([330, 790])
+        splitter.setSizes([650, 440])
 
         self.progress = QProgressBar()
         self.progress.setValue(0)
         layout.addWidget(self.progress)
-        self.status = QLabel("Add one or more folders to begin.")
+        self.status = titled("Aggiungi una cartella per iniziare.", "subtitle")
         layout.addWidget(self.status)
         self.checks: list[tuple[ImageInfo, object]] = []
+        self.update_statistics()
+
+    @staticmethod
+    def stat_card(layout: QHBoxLayout, title: str) -> QLabel:
+        frame, column = card()
+        column.addWidget(titled(title, "subtitle"))
+        value = titled("0", "metric")
+        column.addWidget(value)
+        layout.addWidget(frame, 1)
+        return value
+
+    def update_statistics(self) -> None:
+        duplicate_count = sum(len(group) - 1 for group in self.groups)
+        potential_bytes = sum(item.bytes for group in self.groups for item in group[1:])
+        self.metric_images.setText(f"{len(self.images):,}".replace(",", "."))
+        self.metric_duplicates.setText(str(duplicate_count))
+        self.metric_space.setText(f"{potential_bytes / (1024**2):.1f} MB")
 
     def add_folder(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Choose image folder")
@@ -151,7 +278,7 @@ class MainWindow(QMainWindow):
         self.progress.setValue(0)
         self.start_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
-        self.status.setText("Scanning images…")
+        self.status.setText("Scansione in corso…")
         self.thread = QThread(self)
         self.worker = ScanWorker(self.folders.copy())
         self.worker.moveToThread(self.thread)
@@ -168,7 +295,7 @@ class MainWindow(QMainWindow):
     def cancel_scan(self) -> None:
         if self.worker:
             self.worker.cancel()
-            self.status.setText("Stopping after current image…")
+            self.status.setText("Interruzione dopo l'immagine corrente…")
 
     @Slot(int, int)
     def update_progress(self, done: int, total: int) -> None:
@@ -178,16 +305,16 @@ class MainWindow(QMainWindow):
     def on_complete(self, images: list[ImageInfo], errors: list[str]) -> None:
         self.images = images
         self.refresh_groups()
-        self.status.setText(f"{len(images)} images analyzed; {len(self.groups)} similar groups; "
-                            f"{len(errors)} unreadable files.")
+        self.status.setText(f"{len(images)} immagini analizzate · {len(self.groups)} gruppi · "
+                            f"{len(errors)} file non leggibili")
         if errors:
-            QMessageBox.warning(self, "Unreadable files", "Some files were skipped:\n" +
+            QMessageBox.warning(self, "File non leggibili", "Alcuni file sono stati ignorati:\n" +
                                 "\n".join(errors[:10]))
 
     @Slot(str)
     def on_error(self, message: str) -> None:
-        QMessageBox.critical(self, "Scan failed", message)
-        self.status.setText("Scan failed.")
+        QMessageBox.critical(self, "Errore durante la scansione", message)
+        self.status.setText("Scansione non riuscita.")
 
     @Slot()
     def on_thread_finished(self) -> None:
@@ -200,15 +327,27 @@ class MainWindow(QMainWindow):
         self.groups = group_similar(self.images, self.mode.currentText())
         self.group_list.clear()
         for index, group in enumerate(self.groups, 1):
-            self.group_list.addItem(f"Group {index} — {len(group)} images")
+            item = QListWidgetItem()
+            item.setSizeHint(QSize(400, 115))
+            self.group_list.addItem(item)
+            widget = QWidget()
+            row = QHBoxLayout(widget)
+            row.setContentsMargins(8, 4, 8, 4)
+            for photo in group[:2]:
+                row.addWidget(thumbnail(photo.path, 110, 94))
+            information = QVBoxLayout()
+            information.addWidget(titled(f"Gruppo {index}", "section"))
+            information.addWidget(titled(f"{len(group)} immagini", "subtitle"))
+            information.addStretch()
+            row.addLayout(information, 1)
+            self.group_list.setItemWidget(item, widget)
+        self.update_statistics()
         if self.groups:
             self.group_list.setCurrentRow(0)
         else:
             self.show_group(-1)
 
     def show_group(self, row: int) -> None:
-        from PySide6.QtWidgets import QCheckBox
-
         while self.preview_layout.count():
             item = self.preview_layout.takeAt(0)
             widget = item.widget()
@@ -216,41 +355,47 @@ class MainWindow(QMainWindow):
                 widget.deleteLater()
         self.checks = []
         if row < 0 or row >= len(self.groups):
+            self.group_title.setText("Nessun gruppo selezionato")
+            self.trash_button.setEnabled(False)
             return
+        self.trash_button.setEnabled(True)
+        self.group_title.setText(f"Gruppo {row + 1} di {len(self.groups)}")
         for index, image in enumerate(self.groups[row]):
-            item = QWidget()
-            item_layout = QHBoxLayout(item)
-            thumb = QLabel()
-            pixmap = QPixmap(str(image.path))
-            if not pixmap.isNull():
-                thumb.setPixmap(pixmap.scaled(180, 140, Qt.AspectRatioMode.KeepAspectRatio,
-                                            Qt.TransformationMode.SmoothTransformation))
-            thumb.setFixedSize(190, 150)
-            item_layout.addWidget(thumb)
-            details = QVBoxLayout()
-            checkbox = QCheckBox("Move to Trash" if index else "Keep (highest resolution)")
+            item, item_layout = card()
+            item_layout.addWidget(thumbnail(image.path, 290, 180),
+                                  alignment=Qt.AlignmentFlag.AlignHCenter)
+            checkbox = QCheckBox("Sposta nel cestino")
             checkbox.setChecked(False)
-            details.addWidget(checkbox)
-            label = QLabel(str(image.path))
+            item_layout.addWidget(checkbox)
+            item_layout.addWidget(titled("Consigliata da conservare" if index == 0
+                                        else "Verifica prima di selezionare", "subtitle"))
+            label = QLabel(image.path.name)
             label.setWordWrap(True)
             label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-            details.addWidget(label)
-            details.addWidget(QLabel(f"{image.width} × {image.height}  ·  {image.bytes / 1024:.0f} KB"))
-            item_layout.addLayout(details, 1)
+            item_layout.addWidget(label)
+            item_layout.addWidget(titled(f"{image.width} × {image.height} · "
+                                        f"{image.bytes / 1024:.0f} KB", "subtitle"))
+            path = titled(str(image.path), "subtitle")
+            path.setWordWrap(True)
+            path.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            item_layout.addWidget(path)
             self.preview_layout.addWidget(item)
             self.checks.append((image, checkbox))
 
     def trash_selected(self) -> None:
         targets = [image.path for image, checkbox in self.checks if checkbox.isChecked()]
         if not targets:
+            QMessageBox.information(self, "Nessuna selezione",
+                                    "Seleziona prima le immagini da spostare nel cestino.")
             return
         if len(targets) == len(self.checks):
-            QMessageBox.warning(self, "Keep an image", "At least one image must remain in the group.")
+            QMessageBox.warning(self, "Conserva un'immagine",
+                                "Deve rimanere almeno un'immagine nel gruppo.")
             return
         response = QMessageBox.question(
-            self, "Confirm move to Trash",
-            f"Move {len(targets)} selected image(s) to the system Trash?\n"
-            "Review your selections: the app cannot undo this action directly.",
+            self, "Conferma lo spostamento",
+            f"Spostare {len(targets)} immagini nel cestino?\n"
+            "Controlla le selezioni: VisiLens non può annullare direttamente l'operazione.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -266,13 +411,15 @@ class MainWindow(QMainWindow):
                 failures.append(f"{path}: {exc}")
         self.images = [image for image in self.images if image.path not in moved]
         self.refresh_groups()
-        self.status.setText(f"Moved {len(moved)} file(s) to Trash; {len(failures)} failures.")
+        self.status.setText(f"{len(moved)} immagini nel cestino · {len(failures)} errori")
         if failures:
-            QMessageBox.warning(self, "Some files were not moved", "\n".join(failures[:10]))
+            QMessageBox.warning(self, "Alcuni file non sono stati spostati",
+                                "\n".join(failures[:10]))
 
     def closeEvent(self, event) -> None:
         if self.thread is not None:
-            QMessageBox.information(self, "Scan active", "Cancel the scan and wait for it to stop.")
+            QMessageBox.information(self, "Scansione attiva",
+                                    "Interrompi la scansione e attendi che termini.")
             event.ignore()
         else:
             event.accept()
