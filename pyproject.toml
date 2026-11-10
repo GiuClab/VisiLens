@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "visilens"
-version = "0.1.0"
+version = "0.2.0"
 description = "Cross-platform visual duplicate image finder"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-dependencies = ["Pillow>=10.0", "ImageHash>=4.3", "PySide6>=6.6", "Send2Trash>=1.8"]
+dependencies = ["Pillow>=10.0", "ImageHash>=4.3", "numpy>=1.26", "PySide6>=6.6", "Send2Trash>=1.8"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.8"]
