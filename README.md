@@ -3,7 +3,7 @@
 An open-source, cross-platform desktop application for finding **visually similar photos**.
 Inspired by the workflow of VisiPics; not affiliated with its authors.
 
-**Status: 0.1.0 — early preview.** Windows, macOS and Linux, Python 3.10+.
+**Status: 0.2.0 — early preview.** Windows, macOS and Linux, Python 3.10+.
 
 ## Features
 
@@ -11,7 +11,7 @@ Inspired by the workflow of VisiPics; not affiliated with its authors.
 - Find visually similar images even when sizes or formats differ.
 - Strict / Basic / Loose sensitivity using 64-bit perceptual hashing.
 - Browse groups with thumbnails, file paths, resolution and size.
-- Suggest keeping the highest-resolution file; manually override selections.
+- Show the highest-resolution file first; manually choose every file to trash.
 - Move explicitly selected files to the **system Trash** after confirmation.
 - Cancel scanning; skip and report damaged/unreadable files.
 
@@ -46,10 +46,15 @@ filesystem and its configuration. Back up important photo collections.
 
 ## How matching works
 
-Each image is EXIF-rotated and converted to a 64-bit pHash. Hamming distance
-thresholds are Strict <= 2, Basic <= 7, Loose <= 13. Matches are combined into
-connected groups: **two items in the same group are not necessarily direct
-matches**. Compare them manually before moving files to Trash.
+Each image is EXIF-rotated and converted to a 64-bit pHash, plus a compact RGB
+sample. pHash first filters candidate pairs (Strict <= 2, Basic <= 7, Loose <= 13);
+then pixel color difference and the fraction of substantially changed pixels
+must also pass conservative thresholds. This excludes many color-swapped logos,
+different outfits and alternate designs that pHash alone mistakenly identifies.
+Every pair in a group must match directly: indirect A-B-C chains are rejected.
+The algorithm intentionally prioritizes **precision over recall**: altered crops,
+color variations and some genuine duplicates may be omitted. Always review
+the previews before selecting any image for the Trash.
 
 The current implementation uses an O(n²) similarity comparison and is aimed
 at small-to-medium libraries. Future work: indexing for large libraries,
@@ -80,5 +85,5 @@ describe the inspiration.
 VisiLens è un programma desktop open source per trovare foto duplicate o
 visivamente simili su Windows, macOS e Linux. Aggiungi le cartelle, avvia la
 scansione, confronta le anteprime e scegli quali immagini spostare nel cestino.
-Nessun file viene eliminato automaticamente. La versione 0.1.0 è una prima
+Nessun file viene eliminato automaticamente. La versione 0.2.0 è una prima
 anteprima: controlla sempre le selezioni e conserva una copia dei tuoi archivi.
