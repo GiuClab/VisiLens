@@ -3,7 +3,7 @@
 An open-source, cross-platform desktop application for finding **visually similar photos**.
 Inspired by the workflow of VisiPics; not affiliated with its authors.
 
-**Status: 0.2.0 — early preview.** Windows, macOS and Linux, Python 3.10+.
+**Status: 0.3.0 — Windows-first early preview.** Windows 10/11, Python 3.10+.
 
 ## Features
 
@@ -14,6 +14,10 @@ Inspired by the workflow of VisiPics; not affiliated with its authors.
 - Show the highest-resolution file first; manually choose every file to trash.
 - Move explicitly selected files to the **system Trash** after confirmation.
 - Cancel scanning; skip and report damaged/unreadable files.
+- Modernized Italian-language desktop layout with sidebar, image thumbnails,
+  group details and scan statistics.
+- SQLite fingerprint cache on Windows in `%LOCALAPPDATA%\\VisiLens` to speed up
+  subsequent scans of unchanged files (paths and image fingerprints are stored locally).
 
 ## Installation
 
@@ -56,10 +60,14 @@ The algorithm intentionally prioritizes **precision over recall**: altered crops
 color variations and some genuine duplicates may be omitted. Always review
 the previews before selecting any image for the Trash.
 
+**Strict** in version 0.3.0 is deliberately much stricter: even small local
+changes in clothing, backgrounds or graphic elements should be rejected. Use
+Basic if you also want to discover recompressed photos that Strict may miss.
+
 The current implementation uses an O(n²) similarity comparison and is aimed
 at small-to-medium libraries. Future work: indexing for large libraries,
 better cropped-image matching, packaging signed desktop installers, localization,
-and persistence of scan results.
+and persistence of full scan results.
 
 ## Development
 
@@ -71,7 +79,8 @@ python -m ruff check src tests
 
 The core matcher is in `src/visilens/core.py`, independent of the Qt GUI in
 `src/visilens/app.py`. Tests generate temporary images; no personal photo
-library is needed. GitHub Actions tests on Windows, macOS and Linux.
+library is needed. GitHub Actions currently tests and packages Windows only;
+macOS/Linux builds are paused during the Windows-first phase.
 
 ## License
 
@@ -83,7 +92,7 @@ describe the inspiration.
 ## Italiano
 
 VisiLens è un programma desktop open source per trovare foto duplicate o
-visivamente simili su Windows, macOS e Linux. Aggiungi le cartelle, avvia la
+visivamente simili, attualmente sviluppato e distribuito per Windows. Aggiungi le cartelle, avvia la
 scansione, confronta le anteprime e scegli quali immagini spostare nel cestino.
-Nessun file viene eliminato automaticamente. La versione 0.2.0 è una prima
+Nessun file viene eliminato automaticamente. La versione 0.3.0 è una prima
 anteprima: controlla sempre le selezioni e conserva una copia dei tuoi archivi.
