@@ -22,7 +22,8 @@ def test_prefers_unique_higher_resolution(tmp_path: Path) -> None:
 def test_ambiguous_same_resolution_is_skipped(tmp_path: Path) -> None:
     a = picture(tmp_path / "a.png", 1000, 1000, 100)
     b = picture(tmp_path / "b.png", 1000, 1000, 200)
-    result = propose_selection([[a, b]], SelectionOptions())
+    result = propose_selection([[a, b]], SelectionOptions(prefer_file_size=False,
+                                                         resolve_ties=False))
     assert not result.trash_paths
     assert result.skipped_groups == 1
 
@@ -56,6 +57,25 @@ def test_protected_folder_boundary_is_respected(tmp_path: Path) -> None:
 def test_no_criteria_does_not_select_anything(tmp_path: Path) -> None:
     a = picture(tmp_path / "a.png", 1000, 1000, 100)
     b = picture(tmp_path / "b.png", 2000, 2000, 200)
-    result = propose_selection([[a, b]], SelectionOptions(prefer_resolution=False))
+    result = propose_selection([[a, b]], SelectionOptions(prefer_resolution=False,
+                                                         prefer_file_size=False,
+                                                         resolve_ties=False))
     assert not result.trash_paths
     assert result.skipped_groups == 1
+
+
+def test_default_auto_selects_same_resolution(tmp_path: Path) -> None:
+    smaller = picture(tmp_path / "smaller.jpg", 2000, 1000, 100)
+    larger = picture(tmp_path / "larger.jpg", 2000, 1000, 200)
+    result = propose_selection([[smaller, larger]], SelectionOptions())
+    assert result.kept_paths == {larger.path}
+    assert result.trash_paths == {smaller.path}
+
+
+def test_equal_files_have_deterministic_winner(tmp_path: Path) -> None:
+    first = picture(tmp_path / "a.jpg", 2000, 1000, 100)
+    second = picture(tmp_path / "b.jpg", 2000, 1000, 100)
+    result = propose_selection([[second, first]], SelectionOptions())
+    assert result.kept_paths == {first.path}
+    assert result.trash_paths == {second.path}
+    assert result.tied_groups == 1
