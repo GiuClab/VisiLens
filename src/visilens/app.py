@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFileDialog,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QListWidget,
@@ -25,6 +26,7 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QPushButton,
     QScrollArea,
+    QSlider,
     QSplitter,
     QVBoxLayout,
     QWidget,
@@ -43,6 +45,8 @@ QLabel#heading { font-size: 27px; font-weight: 750; }
 QLabel#subtitle { color: #606779; font-size: 13px; }
 QLabel#section { font-size: 17px; font-weight: 700; }
 QLabel#metric { font-size: 27px; font-weight: 750; }
+QLabel#tag { color: #3154ac; background: #e5ecff; border-radius: 8px;
+             padding: 4px 8px; font-weight: 650; }
 QPushButton { background: white; border: 1px solid #d5dbe8; border-radius: 9px;
               padding: 9px 13px; font-weight: 600; }
 QPushButton:hover { background: #ecf1ff; border-color: #9aacdf; }
@@ -56,6 +60,9 @@ QListWidget { border: none; background: white; border-radius: 10px; outline: non
 QListWidget::item { padding: 8px; border-bottom: 1px solid #eef0f5; }
 QListWidget::item:selected { background: #dce6ff; color: #203d96; border-radius: 8px; }
 QScrollArea { border: none; background: transparent; }
+QSlider::groove:horizontal { background: #dfe5f2; height: 6px; border-radius: 3px; }
+QSlider::handle:horizontal { background: #4166d5; width: 15px; margin: -5px 0;
+                            border-radius: 7px; }
 QProgressBar { background: #e1e5ef; border: none; border-radius: 5px; height: 8px; }
 QProgressBar::chunk { background: #4c6de2; border-radius: 5px; }
 """
@@ -122,7 +129,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("VisiLens — Trova le foto duplicate")
         self.resize(1420, 850)
-        self.setMinimumSize(1060, 650)
+        self.setMinimumSize(1150, 720)
         self.setStyleSheet(STYLE)
         self.folders: list[Path] = []
         self.images: list[ImageInfo] = []
@@ -155,7 +162,7 @@ class MainWindow(QMainWindow):
             button.clicked.connect(action)
             nav.addWidget(button)
         nav.addStretch()
-        nav.addWidget(titled("0.4.2 · Anteprima", "subtitle"))
+        nav.addWidget(titled("0.5.0 · Anteprima", "subtitle"))
         outer.addWidget(sidebar)
 
         layout = QVBoxLayout()
@@ -233,19 +240,40 @@ class MainWindow(QMainWindow):
         splitter.addWidget(left)
 
         right, right_layout = card()
-        right.setMinimumWidth(380)
+        right.setMinimumWidth(490)
         right_layout.addWidget(titled("Dettagli del gruppo", "section"))
         self.group_title = titled("Nessun gruppo selezionato", "subtitle")
         right_layout.addWidget(self.group_title)
-        note = titled("Le proposte non spostano file nel cestino senza conferma.",
-                      "subtitle")
-        note.setWordWrap(True)
-        right_layout.addWidget(note)
+        compare_controls = QHBoxLayout()
+        compare_controls.addWidget(titled("Confronta A", "subtitle"))
+        self.compare_a = QComboBox()
+        self.compare_a.currentIndexChanged.connect(self.update_comparison)
+        compare_controls.addWidget(self.compare_a, 1)
+        compare_controls.addWidget(titled("B", "subtitle"))
+        self.compare_b = QComboBox()
+        self.compare_b.currentIndexChanged.connect(self.update_comparison)
+        compare_controls.addWidget(self.compare_b, 1)
+        enlarge = QPushButton("⤢  Ingrandisci")
+        enlarge.clicked.connect(self.open_comparison)
+        compare_controls.addWidget(enlarge)
+        right_layout.addLayout(compare_controls)
+        compare_preview = QHBoxLayout()
+        self.compare_image_a = QLabel()
+        self.compare_image_b = QLabel()
+        for preview in (self.compare_image_a, self.compare_image_b):
+            preview.setFixedHeight(155)
+            preview.setMinimumWidth(150)
+            preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            preview.setStyleSheet("background: #eef1f7; border-radius: 9px;")
+            compare_preview.addWidget(preview, 1)
+        right_layout.addLayout(compare_preview)
+        right_layout.addWidget(titled("Tutte le immagini del gruppo", "section"))
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         self.preview = QWidget()
-        self.preview_layout = QVBoxLayout(self.preview)
+        self.preview_layout = QGridLayout(self.preview)
         self.preview_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.preview_layout.setSpacing(10)
         scroll.setWidget(self.preview)
         right_layout.addWidget(scroll)
         self.trash_button = QPushButton("♲  Sposta selezionate nel cestino")
@@ -253,7 +281,7 @@ class MainWindow(QMainWindow):
         self.trash_button.clicked.connect(self.trash_selected)
         right_layout.addWidget(self.trash_button)
         splitter.addWidget(right)
-        splitter.setSizes([650, 440])
+        splitter.setSizes([550, 600])
 
         self.progress = QProgressBar()
         self.progress.setValue(0)
@@ -355,13 +383,15 @@ class MainWindow(QMainWindow):
         self.group_badges = []
         for index, group in enumerate(self.groups, 1):
             item = QListWidgetItem()
-            item.setSizeHint(QSize(400, 115))
+            item.setSizeHint(QSize(440, 112))
             self.group_list.addItem(item)
             widget = QWidget()
             row = QHBoxLayout(widget)
             row.setContentsMargins(8, 4, 8, 4)
-            for photo in group[:2]:
-                row.addWidget(thumbnail(photo.path, 110, 94))
+            for photo in group[:4]:
+                row.addWidget(thumbnail(photo.path, 76, 82))
+            if len(group) > 4:
+                row.addWidget(titled(f"+{len(group) - 4}", "tag"))
             information = QVBoxLayout()
             information.addWidget(titled(f"Gruppo {index}", "section"))
             information.addWidget(titled(f"{len(group)} immagini", "subtitle"))
@@ -387,17 +417,26 @@ class MainWindow(QMainWindow):
             if widget:
                 widget.deleteLater()
         self.checks = []
+        self.compare_a.blockSignals(True)
+        self.compare_b.blockSignals(True)
+        self.compare_a.clear()
+        self.compare_b.clear()
         if row < 0 or row >= len(self.groups):
             self.group_title.setText("Nessun gruppo selezionato")
             self.trash_button.setEnabled(False)
+            self.compare_a.blockSignals(False)
+            self.compare_b.blockSignals(False)
+            self.compare_image_a.clear()
+            self.compare_image_b.clear()
             return
         self.trash_button.setEnabled(True)
         self.group_title.setText(f"Gruppo {row + 1} di {len(self.groups)}")
         for index, image in enumerate(self.groups[row]):
             item, item_layout = card()
+            item.setMinimumWidth(205)
             if image.path in self.selected_paths:
                 item.setStyleSheet("QFrame { border: 2px solid #d65b5b; background: #fff8f8; }")
-            item_layout.addWidget(thumbnail(image.path, 290, 180),
+            item_layout.addWidget(thumbnail(image.path, 170, 138),
                                   alignment=Qt.AlignmentFlag.AlignHCenter)
             checkbox = QCheckBox("Sposta nel cestino")
             checkbox.setChecked(image.path in self.selected_paths)
@@ -411,20 +450,108 @@ class MainWindow(QMainWindow):
                 )
             )
             item_layout.addWidget(checkbox)
-            item_layout.addWidget(titled("Consigliata da conservare" if index == 0
-                                        else "Verifica prima di selezionare", "subtitle"))
+            if index == 0:
+                item_layout.addWidget(titled("Risoluzione più alta", "tag"))
             label = QLabel(image.path.name)
             label.setWordWrap(True)
+            label.setToolTip(str(image.path))
             label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             item_layout.addWidget(label)
             item_layout.addWidget(titled(f"{image.width} × {image.height} · "
                                         f"{image.bytes / 1024:.0f} KB", "subtitle"))
-            path = titled(str(image.path), "subtitle")
-            path.setWordWrap(True)
-            path.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-            item_layout.addWidget(path)
-            self.preview_layout.addWidget(item)
+            self.preview_layout.addWidget(item, index // 2, index % 2)
             self.checks.append((image, checkbox))
+            name = f"{index + 1}. {image.path.name}"
+            self.compare_a.addItem(name)
+            self.compare_b.addItem(name)
+        self.compare_a.setCurrentIndex(0)
+        self.compare_b.setCurrentIndex(1 if len(self.groups[row]) > 1 else 0)
+        self.compare_a.blockSignals(False)
+        self.compare_b.blockSignals(False)
+        self.update_comparison()
+
+    def comparison_images(self) -> tuple[ImageInfo, ImageInfo] | None:
+        row = self.group_list.currentRow()
+        if not (0 <= row < len(self.groups)):
+            return None
+        group = self.groups[row]
+        a, b = self.compare_a.currentIndex(), self.compare_b.currentIndex()
+        if not (0 <= a < len(group) and 0 <= b < len(group)):
+            return None
+        return group[a], group[b]
+
+    def update_comparison(self) -> None:
+        pair = self.comparison_images()
+        if pair is None:
+            return
+        for info, view in zip(pair, (self.compare_image_a, self.compare_image_b), strict=True):
+            pixmap = QPixmap(str(info.path))
+            if pixmap.isNull():
+                view.setText("Anteprima non disponibile")
+                continue
+            view.setPixmap(pixmap.scaled(220, 145, Qt.AspectRatioMode.KeepAspectRatio,
+                                         Qt.TransformationMode.SmoothTransformation))
+
+    def open_comparison(self) -> None:
+        pair = self.comparison_images()
+        if pair is None:
+            return
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Confronto ingrandito — VisiLens")
+        dialog.resize(1150, 760)
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(titled("Confronto affiancato", "section"))
+        layout.addWidget(titled("Usa lo zoom per esaminare piccoli dettagli nelle due immagini.",
+                                "subtitle"))
+        pictures = QHBoxLayout()
+        source_pixmaps = [QPixmap(str(info.path)) for info in pair]
+        display_labels = []
+        for info in pair:
+            column = QVBoxLayout()
+            column.addWidget(titled(info.path.name, "section"))
+            column.addWidget(titled(f"{info.width} × {info.height} · "
+                                    f"{info.bytes / 1024:.0f} KB", "subtitle"))
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(False)
+            display = QLabel()
+            display.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            display.setStyleSheet("background: #edf0f6; border-radius: 8px;")
+            scroll.setWidget(display)
+            column.addWidget(scroll, 1)
+            pictures.addLayout(column, 1)
+            display_labels.append(display)
+        layout.addLayout(pictures, 1)
+        zoom_row = QHBoxLayout()
+        zoom_row.addWidget(titled("Zoom", "subtitle"))
+        slider = QSlider(Qt.Orientation.Horizontal)
+        slider.setRange(50, 300)
+        slider.setValue(100)
+        zoom_label = titled("100%", "subtitle")
+        zoom_row.addWidget(slider, 1)
+        zoom_row.addWidget(zoom_label)
+        layout.addLayout(zoom_row)
+
+        def apply_zoom(value: int) -> None:
+            zoom_label.setText(f"{value}%")
+            for pixmap, view in zip(source_pixmaps, display_labels, strict=True):
+                if pixmap.isNull():
+                    view.setText("Anteprima non disponibile")
+                    continue
+                baseline = pixmap.scaled(510, 510, Qt.AspectRatioMode.KeepAspectRatio,
+                                         Qt.TransformationMode.SmoothTransformation)
+                scaled = baseline.scaled(round(baseline.width() * value / 100),
+                                         round(baseline.height() * value / 100),
+                                         Qt.AspectRatioMode.KeepAspectRatio,
+                                         Qt.TransformationMode.SmoothTransformation)
+                view.setPixmap(scaled)
+                view.resize(scaled.size())
+
+        slider.valueChanged.connect(apply_zoom)
+        apply_zoom(100)
+        close = QPushButton("Chiudi")
+        close.clicked.connect(dialog.accept)
+        layout.addWidget(close, alignment=Qt.AlignmentFlag.AlignRight)
+        dialog.exec()
 
     def set_selected(self, path: Path, checked: bool) -> None:
         if checked:
