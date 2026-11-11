@@ -3,7 +3,7 @@
 An open-source, cross-platform desktop application for finding **visually similar photos**.
 Inspired by the workflow of VisiPics; not affiliated with its authors.
 
-**Status: 0.6.0 — Windows-first early preview.** Windows 10/11, Python 3.10+.
+**Status: 0.6.1 — Windows-first early preview.** Windows 10/11, Python 3.10+.
 
 ## Features
 
@@ -19,9 +19,12 @@ Inspired by the workflow of VisiPics; not affiliated with its authors.
   details on the right.
 - Every group displays **all of its copies** in a scrollable two-column gallery,
   rather than limiting the display to pairs or a few representative pictures.
-- Click a thumbnail to immediately **select or deselect it for the Trash**;
-  the same checkbox on the tile can be used directly. The preview updates to
-  the clicked image.
+- Click a thumbnail to show it in the large preview and highlight its tile
+  with a blue border. **Only the checkbox** selects or deselects a file for
+  the Trash; viewing a picture never selects it for deletion.
+- The folder tree includes Windows user locations (Desktop, Documents,
+  Downloads, Pictures, Music and Video) with native file icons, plus the disks.
+- Similarity slider runs from Loose (blue), through Basic (green), to Strict (red).
 - File, Language and Help menus (Italian available; English planned).
 - SQLite fingerprint cache on Windows in `%LOCALAPPDATA%\\VisiLens` to speed up
   subsequent scans of unchanged files (paths and image fingerprints are stored locally).
@@ -47,11 +50,11 @@ If `visilens` is not on your PATH, run `python -m visilens.app`.
 ## Usage
 
 1. Check folders in the left-hand tree, or use **File → Aggiungi cartella…**.
-2. Click **Avvia scansione**; adjust Strict, Basic or Loose using the slider.
+2. Click **Avvia scansione**; adjust Loose, Basic or Strict using the slider.
 3. Scroll through separate groups; all copies within each group are visible.
-4. Click each thumbnail to toggle its Trash selection. The larger preview on
-   the right shows the file you last clicked. Leave at least one copy unchecked
-   in every group.
+4. Click a thumbnail to inspect it in the larger preview on the right. Mark
+   files for deletion exclusively with the **Cestino** checkboxes. Leave at
+   least one copy unchecked in every group.
 5. Click **Sposta selezionate nel cestino** and confirm.
 
 Groups with three, four or more copies are shown in full. Auto-Select and
@@ -125,5 +128,5 @@ describe the inspiration.
 VisiLens è un programma desktop open source per trovare foto duplicate o
 visivamente simili, attualmente sviluppato e distribuito per Windows. Aggiungi le cartelle, avvia la
 scansione, confronta le anteprime e scegli quali immagini spostare nel cestino.
-Nessun file viene eliminato automaticamente. La versione 0.6.0 è una prima
+Nessun file viene eliminato automaticamente. La versione 0.6.1 è una prima
 anteprima: controlla sempre le selezioni e conserva una copia dei tuoi archivi.
