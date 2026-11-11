@@ -295,7 +295,7 @@ class ImageTile(QFrame):
                                                     Qt.AspectRatioMode.KeepAspectRatio))
         image = reader.read()
         if image.isNull():
-            self.button.setText("Anteprima non disponibile")
+            self.button.setText(tr("Anteprima non disponibile"))
         else:
             self.button.setIcon(QIcon(QPixmap.fromImage(image)))
             self.button.setIconSize(QSize(126, 106))
@@ -598,7 +598,10 @@ class MainWindow(QMainWindow):
                 widget.setProperty("source_caption", source)
             widget.setText(tr(source))
         self.support_button.setText("❤️ " + tr("Support me"))
-        self.mode_changed(self.mode_slider.value())
+        mode = self.MODES[self.mode_slider.value()]
+        self.filter_name.setText(tr({"Strict": "Strict — confronto rigoroso",
+                                     "Basic": "Basic — somiglianza equilibrata",
+                                     "Loose": "Loose — confronto flessibile"}[mode]))
 
     def prompt_language_first_run(self) -> None:
         if self.settings.value("ui/language_chosen", False, type=bool):
@@ -723,9 +726,9 @@ class MainWindow(QMainWindow):
 
     def mode_changed(self, index: int) -> None:
         mode = self.MODES[index]
-        self.filter_name.setText({"Strict": "Strict — confronto rigoroso",
-                                  "Basic": "Basic — somiglianza equilibrata",
-                                  "Loose": "Loose — confronto flessibile"}[mode])
+        self.filter_name.setText(tr({"Strict": "Strict — confronto rigoroso",
+                                     "Basic": "Basic — somiglianza equilibrata",
+                                     "Loose": "Loose — confronto flessibile"}[mode]))
         self.set_mode_color(index)
         self.refresh_groups()
 
@@ -740,7 +743,7 @@ class MainWindow(QMainWindow):
         if self.thread is not None:
             return
         if not self.folders:
-            self.status.setText("Seleziona almeno una cartella.")
+            self.status.setText(tr("Seleziona almeno una cartella."))
             return
         self.image_generation += 1
         self.group_cache.clear()
@@ -751,7 +754,7 @@ class MainWindow(QMainWindow):
         self.progress.setValue(0)
         self.start_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
-        self.status.setText("Scansione in corso…")
+        self.status.setText(tr("Scansione in corso…"))
         self.thread = QThread(self)
         self.worker = ScanWorker(self.folders.copy(), self.hidden_action.isChecked())
         self.worker.moveToThread(self.thread)
@@ -768,7 +771,7 @@ class MainWindow(QMainWindow):
     def cancel_scan(self) -> None:
         if self.worker:
             self.worker.cancel()
-            self.status.setText("Arresto dopo l'immagine corrente…")
+            self.status.setText(tr("Arresto dopo l'immagine corrente…"))
 
     @Slot(int, int)
     def update_progress(self, done: int, total: int) -> None:
@@ -787,7 +790,7 @@ class MainWindow(QMainWindow):
     @Slot(str)
     def on_error(self, error: str) -> None:
         QMessageBox.critical(self, "Errore durante la scansione", error)
-        self.status.setText("Scansione non riuscita")
+        self.status.setText(tr("Scansione non riuscita"))
 
     @Slot()
     def on_thread_finished(self) -> None:
@@ -881,7 +884,7 @@ class MainWindow(QMainWindow):
         else:
             self.preview_path = None
             self.big_preview.clear()
-            self.preview_name.setText("Nessuna immagine selezionata")
+            self.preview_name.setText(tr("Nessuna immagine selezionata"))
             self.preview_link.clear()
             self.preview_details.setText("")
 
@@ -960,7 +963,7 @@ class MainWindow(QMainWindow):
     def clear_selection(self) -> None:
         self.selected_paths.clear()
         self.update_selection_ui()
-        self.status.setText("Selezione annullata; nessun file modificato")
+        self.status.setText(tr("Selezione annullata; nessun file modificato"))
 
     def show_preview(self, path: Path) -> None:
         info = self.image_by_path.get(path)
@@ -1073,18 +1076,18 @@ class MainWindow(QMainWindow):
 
     def configure_auto_select(self) -> None:
         dialog = QDialog(self)
-        dialog.setWindowTitle("Criteri Auto-Select")
+        dialog.setWindowTitle(tr("Criteri Auto-Select"))
         dialog.setMinimumWidth(450)
         layout = QVBoxLayout(dialog)
-        layout.addWidget(lbl("Quale copia vuoi conservare?", "section"))
-        resolution = QCheckBox("Preferisci la risoluzione maggiore")
+        layout.addWidget(lbl(tr("Quale copia vuoi conservare?"), "section"))
+        resolution = QCheckBox(tr("Preferisci la risoluzione maggiore"))
         resolution.setChecked(self.settings.value("prefer_resolution", True, type=bool))
         layout.addWidget(resolution)
-        size = QCheckBox("A parità, preferisci il file più grande")
+        size = QCheckBox(tr("A parità, preferisci il file più grande"))
         size.setChecked(self.settings.value("prefer_file_size", True, type=bool))
         layout.addWidget(size)
-        layout.addWidget(lbl("La dimensione del file non garantisce qualità migliore.", "muted"))
-        layout.addWidget(lbl("Cartelle protette", "section"))
+        layout.addWidget(lbl(tr("La dimensione del file non garantisce qualità migliore."), "muted"))
+        layout.addWidget(lbl(tr("Cartelle protette"), "section"))
         protected = QListWidget()
         protected.setMinimumHeight(90)
         folders = [Path(p) for p in self.settings.value("protected_folders", [], type=list)]
@@ -1092,7 +1095,7 @@ class MainWindow(QMainWindow):
             protected.addItem(str(folder))
         layout.addWidget(protected)
         row = QHBoxLayout()
-        add = QPushButton("Aggiungi")
+        add = QPushButton(tr("Aggiungi"))
 
         def add_folder() -> None:
             name = QFileDialog.getExistingDirectory(dialog, "Cartella protetta")
@@ -1102,7 +1105,7 @@ class MainWindow(QMainWindow):
 
         add.clicked.connect(add_folder)
         row.addWidget(add)
-        remove = QPushButton("Rimuovi")
+        remove = QPushButton(tr("Rimuovi"))
 
         def remove_folder() -> None:
             index = protected.currentRow()
@@ -1122,12 +1125,12 @@ class MainWindow(QMainWindow):
             self.settings.setValue("prefer_resolution", resolution.isChecked())
             self.settings.setValue("prefer_file_size", size.isChecked())
             self.settings.setValue("protected_folders", [str(path) for path in folders])
-            self.status.setText("Criteri salvati. Premi Auto-Select per applicarli.")
+            self.status.setText(tr("Criteri salvati. Premi Auto-Select per applicarli."))
 
     def trash_selected(self) -> None:
         targets = list(self.selected_paths)
         if not targets:
-            QMessageBox.information(self, "Nessuna selezione", "Seleziona prima le immagini.")
+            QMessageBox.information(self, tr("Nessuna selezione"), tr("Seleziona prima le immagini."))
             return
         if any(all(image.path in self.selected_paths for image in group)
                for group in self.groups):
@@ -1160,7 +1163,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event) -> None:
         if self.thread is not None or self.group_thread is not None:
-            QMessageBox.information(self, "Scansione in corso",
+            QMessageBox.information(self, tr("Scansione in corso"),
                                     "Attendi il completamento dell'elaborazione prima di chiudere.")
             event.ignore()
         else:
@@ -1178,9 +1181,9 @@ class MainWindow(QMainWindow):
         dialog.setIcon(QMessageBox.Icon.Question)
         dialog.setWindowTitle(tr("Conferma chiusura"))
         dialog.setText(tr("Vuoi davvero chiudere VisiLens?"))
-        dialog.setInformativeText(
+        dialog.setInformativeText(tr(
             "I gruppi trovati e le selezioni correnti non saranno più disponibili "
-            "alla prossima apertura. Nessuna immagine verrà eliminata.")
+            "alla prossima apertura. Nessuna immagine verrà eliminata."))
         close_button = dialog.addButton(tr("Chiudi"), QMessageBox.ButtonRole.AcceptRole)
         cancel_button = dialog.addButton(tr("Annulla"), QMessageBox.ButtonRole.RejectRole)
         dialog.setDefaultButton(cancel_button)
