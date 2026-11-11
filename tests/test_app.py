@@ -77,7 +77,7 @@ def test_folder_tree_has_shortcuts_and_mode_colors() -> None:
     root = window.tree.topLevelItem(0)
     labels = {root.child(i).text(0) for i in range(root.childCount())}
     assert "Download" in labels
-    assert "Documenti" in labels
+    assert tr("Documenti") in labels
     assert window.MODES == ("Loose", "Basic", "Strict")
     for index, color in enumerate(window.MODE_COLORS):
         window.mode_slider.setValue(index)
