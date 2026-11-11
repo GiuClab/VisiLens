@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QApplication
 from visilens import desktop
 from visilens.app import MainWindow
 from visilens.core import ImageInfo
+from visilens.i18n import tr
 
 
 def wait_for(app: QApplication, condition, timeout: float = 3) -> None:
@@ -58,7 +59,7 @@ def test_four_copies_visible_thumbnail_previews_checkbox_selects() -> None:
     window.auto_select()
     assert len(window.selected_paths) == 3
     assert sum(tile.checkbox.isChecked() for tile in window.tiles.values()) == 3
-    assert "3 per il cestino" in window.group_labels[0].text()
+    assert tr("{count} per il cestino").format(count=3) in window.group_labels[0].text()
     assert sum(tile.property("trash") is True for tile in window.tiles.values()) == 3
     marked = next(iter(window.selected_paths))
     window.show_preview(marked)
