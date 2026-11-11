@@ -3,7 +3,7 @@
 An open-source, cross-platform desktop application for finding **visually similar photos**.
 Inspired by the workflow of VisiPics; not affiliated with its authors.
 
-**Status: 0.5.1 — Windows-first early preview.** Windows 10/11, Python 3.10+.
+**Status: 0.6.0 — Windows-first early preview.** Windows 10/11, Python 3.10+.
 
 ## Features
 
@@ -14,14 +14,15 @@ Inspired by the workflow of VisiPics; not affiliated with its authors.
 - Show the highest-resolution file first; manually choose every file to trash.
 - Move explicitly selected files to the **system Trash** after confirmation.
 - Cancel scanning; skip and report damaged/unreadable files.
-- Modernized Italian-language desktop layout with sidebar, image thumbnails,
-  group details and scan statistics.
-- Scrollable two-column gallery showing **every image** in the selected group.
-  The group list previews up to four thumbnails and displays the total count.
-- Choose any two members of a group for side-by-side comparison, then enlarge
-  them in a dedicated zoomable dialog.
-- Separate **Griglia** and **Confronto** views to prevent cramped previews and
-  overlapping labels on smaller Windows displays.
+- Three-pane Italian-language interface: Windows-style folder tree on the left,
+  duplicate groups and scan statistics in the center, large preview and file
+  details on the right.
+- Every group displays **all of its copies** in a scrollable two-column gallery,
+  rather than limiting the display to pairs or a few representative pictures.
+- Click a thumbnail to immediately **select or deselect it for the Trash**;
+  the same checkbox on the tile can be used directly. The preview updates to
+  the clicked image.
+- File, Language and Help menus (Italian available; English planned).
 - SQLite fingerprint cache on Windows in `%LOCALAPPDATA%\\VisiLens` to speed up
   subsequent scans of unchanged files (paths and image fingerprints are stored locally).
 - Optional **Selezione intelligente** for Strict groups, with resolution preference,
@@ -45,23 +46,23 @@ If `visilens` is not on your PATH, run `python -m visilens.app`.
 
 ## Usage
 
-1. Select **Add folder** for each location you want to scan.
-2. Click **Scan**; choose Strict, Basic or Loose to regroup results.
-3. Select a group and review the image previews and proposed selections.
-4. Adjust checkboxes, leaving at least one image unchecked.
-5. Click **Move checked images to Trash** and confirm.
+1. Check folders in the left-hand tree, or use **File → Aggiungi cartella…**.
+2. Click **Avvia scansione**; adjust Strict, Basic or Loose using the slider.
+3. Scroll through separate groups; all copies within each group are visible.
+4. Click each thumbnail to toggle its Trash selection. The larger preview on
+   the right shows the file you last clicked. Leave at least one copy unchecked
+   in every group.
+5. Click **Sposta selezionate nel cestino** and confirm.
 
-Groups with three, four or many more copies are accessible in the scrollable
-**Griglia** view. Switch to **Confronto**, choose any two files using the A/B
-selectors, then use **Ingrandisci** for a larger shared-zoom comparison.
-Auto-Select and manual checkboxes still apply to all images in the group.
+Groups with three, four or more copies are shown in full. Auto-Select and
+manual checkbox selections apply to every image in every group.
 
 ### Selezione intelligente (Auto-Select)
 
 After a **Strict** scan, click **Auto-Select** to immediately select copies
-across every group. The list visibly marks groups containing selected files;
-you can review them with **Mostra solo gruppi con file selezionati**. There is
-no intervening dialog. Use **Criteri** to customize keeper preferences:
+across every group. Selection borders, checkboxes and a per-group count make
+the choices visible immediately; there is no intervening dialog. Use **Criteri**
+to customize keeper preferences:
 protected folders, highest resolution and file-size tiebreaking (enabled by
 default). Remaining ties are resolved by stable path order, which is **not** a
 quality assessment. Review all selections before moving files to Trash. The
@@ -107,7 +108,8 @@ python -m ruff check src tests
 ```
 
 The core matcher is in `src/visilens/core.py`, independent of the Qt GUI in
-`src/visilens/app.py`. Tests generate temporary images; no personal photo
+`src/visilens/desktop.py` (`src/visilens/app.py` is the compatibility entry point).
+Tests generate temporary images; no personal photo
 library is needed. GitHub Actions currently tests and packages Windows only;
 macOS/Linux builds are paused during the Windows-first phase.
 
@@ -123,5 +125,5 @@ describe the inspiration.
 VisiLens è un programma desktop open source per trovare foto duplicate o
 visivamente simili, attualmente sviluppato e distribuito per Windows. Aggiungi le cartelle, avvia la
 scansione, confronta le anteprime e scegli quali immagini spostare nel cestino.
-Nessun file viene eliminato automaticamente. La versione 0.5.1 è una prima
+Nessun file viene eliminato automaticamente. La versione 0.6.0 è una prima
 anteprima: controlla sempre le selezioni e conserva una copia dei tuoi archivi.
