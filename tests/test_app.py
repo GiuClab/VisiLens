@@ -65,6 +65,7 @@ def test_four_copies_visible_thumbnail_previews_checkbox_selects() -> None:
     assert window.tiles[marked].property("trash") is True
     assert window.tiles[marked].property("active") is False
     assert "href=" in window.preview_link.text()
+    window.confirm_close = lambda: True
     window.close()
 
 
@@ -100,6 +101,7 @@ def test_cached_groups_return_without_starting_another_thread() -> None:
     assert window.groups is cached
     assert window.group_thread is None
     wait_for(app, lambda: len(window.tiles) == 3)
+    window.confirm_close = lambda: True
     window.close()
 
 
@@ -145,3 +147,27 @@ def test_first_launch_maximized_and_restored_window_stays_onscreen(tmp_path) -> 
     assert not second.isMaximized()
     assert available.contains(second.geometry())
     second.close()
+
+
+def test_close_confirmation_only_when_duplicate_groups_exist(monkeypatch, tmp_path) -> None:
+    app = QApplication.instance() or QApplication([])
+    assert app is not None
+    settings = QSettings(str(tmp_path / "close.ini"), QSettings.Format.IniFormat)
+    empty = MainWindow(settings=settings)
+    empty.show()
+
+    def unexpected_prompt() -> bool:
+        raise AssertionError("Non chiedere conferma senza gruppi")
+
+    monkeypatch.setattr(empty, "confirm_close", unexpected_prompt)
+    assert empty.close()
+
+    window = MainWindow(settings=settings)
+    window.groups = [[object(), object()]]
+    window.show()
+    monkeypatch.setattr(window, "confirm_close", lambda: False)
+    assert not window.close()
+    assert window.isVisible()
+    assert window.groups
+    monkeypatch.setattr(window, "confirm_close", lambda: True)
+    assert window.close()
