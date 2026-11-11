@@ -31,6 +31,9 @@ jobs:
         run: python tools/build_icon.py
       - name: Build application
         run: python -m PyInstaller --noconfirm --clean --windowed --onedir --name VisiLens --icon build/visilens.ico --add-data "src/visilens/assets/icon.png.b64;visilens/assets" run_visilens.py
+      - name: Set portable profile
+        shell: pwsh
+        run: New-Item -ItemType File -Path dist/VisiLens/portable.flag | Out-Null
       - name: Archive Windows package
         shell: pwsh
         run: Compress-Archive -Path dist/VisiLens -DestinationPath VisiLens-Windows.zip
