@@ -171,10 +171,10 @@ ROWS.update({
     "VisiLens wirklich schließen?",
     "Voulez-vous vraiment fermer VisiLens ?",
 ),
-"I gruppi trovati e le selezioni correnti non saranno più disponibili alla prossima apertura. Nessuna immagine verrà eliminata.": (
+"I gruppi trovati e le selezioni correnti non saranno più disponibili alla prossima apertura. Nessuna immagine verrà eliminata.": (  # noqa: E501
     "Current groups and selections will not be available next time. No images will be deleted.",
-    "Aktuelle Gruppen und Auswahlen sind beim nächsten Start nicht verfügbar. Es werden keine Bilder gelöscht.",
-    "Les groupes et sélections actuels ne seront plus disponibles au prochain démarrage. Aucune image ne sera supprimée.",
+    "Aktuelle Gruppen und Auswahlen sind beim nächsten Start nicht verfügbar. Es werden keine Bilder gelöscht.",  # noqa: E501
+    "Les groupes et sélections actuels ne seront plus disponibles au prochain démarrage. Aucune image ne sera supprimée.",  # noqa: E501
 ),
 "Attendi il completamento dell'elaborazione prima di chiudere.": (
     "Wait until processing finishes before closing.",
@@ -278,10 +278,10 @@ ROWS.update({
     "In jeder Gruppe muss mindestens ein Bild bleiben.",
     "Au moins une image doit rester dans chaque groupe.",
 ),
-"Spostare {count} file nel cestino?\nQuesta operazione non può essere annullata direttamente da VisiLens.": (
+"Spostare {count} file nel cestino?\nQuesta operazione non può essere annullata direttamente da VisiLens.": (  # noqa: E501
     "Move {count} files to Recycle Bin?\nThis operation cannot be undone from VisiLens.",
-    "{count} Dateien in den Papierkorb verschieben?\nDies kann nicht direkt in VisiLens rückgängig gemacht werden.",
-    "Déplacer {count} fichiers dans la corbeille ?\nCette opération ne peut pas être annulée dans VisiLens.",
+    "{count} Dateien in den Papierkorb verschieben?\nDies kann nicht direkt in VisiLens rückgängig gemacht werden.",  # noqa: E501
+    "Déplacer {count} fichiers dans la corbeille ?\nCette opération ne peut pas être annulée dans VisiLens.",  # noqa: E501
 ),
 "{moved} file nel cestino · {errors} errori": (
     "{moved} files moved to Recycle Bin · {errors} errors",
