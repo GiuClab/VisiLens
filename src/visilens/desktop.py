@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import html
 import os
 import subprocess
@@ -68,7 +69,7 @@ from send2trash import send2trash
 
 from .core import ImageInfo, group_similar, scan
 from .selection import SelectionOptions, propose_selection
-from .i18n import LANGUAGES, get_language, set_language, tr
+from .i18n import LANGUAGES, ROWS, get_language, set_language, tr
 
 STYLE = """
 QMainWindow, QWidget#root { background: #f5f6fb; }
@@ -98,6 +99,18 @@ QSlider::groove:horizontal { height: 6px; background: #d4dbea; border-radius: 3p
 QSlider::handle:horizontal { width: 16px; margin: -5px 0; border-radius: 8px;
  background: #365cce; }
 """
+
+
+def app_icon() -> QIcon:
+    """Load the official icon, also from a PyInstaller bundle."""
+    icon_file = Path(__file__).resolve().parent / "assets" / "icon.png.b64"
+    try:
+        bitmap = QPixmap()
+        if bitmap.loadFromData(base64.b64decode(icon_file.read_text(encoding="ascii"))):
+            return QIcon(bitmap)
+    except (OSError, ValueError):
+        pass
+    return QIcon()
 
 
 def lbl(value: str, kind: str = "") -> QLabel:
@@ -309,6 +322,7 @@ class MainWindow(QMainWindow):
     def __init__(self, settings: QSettings | None = None) -> None:
         super().__init__()
         self.setWindowTitle("VisiLens v0.7.0 — © 2026 GiuClab")
+        self.setWindowIcon(app_icon())
         screen = QApplication.primaryScreen()
         available = screen.availableGeometry() if screen else QRect(0, 0, 1366, 768)
         self.setMinimumSize(min(1000, max(1, available.width() - 48)),
@@ -593,7 +607,7 @@ class MainWindow(QMainWindow):
             source = widget.property("source_caption")
             if source is None:
                 source = widget.text()
-                if source not in tr.__globals__["ROWS"]:
+                if source not in ROWS:
                     continue
                 widget.setProperty("source_caption", source)
             widget.setText(tr(source))
@@ -1194,6 +1208,7 @@ class MainWindow(QMainWindow):
 def main() -> None:
     app = QApplication(sys.argv)
     app.setApplicationName("VisiLens")
+    app.setWindowIcon(app_icon())
     window = MainWindow()
     window.open_initial_window()
     QTimer.singleShot(0, window.prompt_language_first_run)
