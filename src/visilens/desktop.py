@@ -497,7 +497,7 @@ class MainWindow(QMainWindow):
         help_menu = self.menuBar().addMenu("Help")
         about = QAction("Informazioni su VisiLens", self)
         about.triggered.connect(lambda: QMessageBox.information(
-            self, "VisiLens", "VisiLens 0.6.3 — anteprima Windows\n"
+            self, "VisiLens", "VisiLens 0.6.4 — anteprima Windows\n"
             "Trova immagini duplicate, controlla le selezioni prima del cestino."))
         help_menu.addAction(about)
         repo = QAction("Progetto su GitHub", self)
@@ -1047,11 +1047,28 @@ class MainWindow(QMainWindow):
                                     "Attendi il completamento dell'elaborazione prima di chiudere.")
             event.ignore()
         else:
+            if self.groups and not self.confirm_close():
+                event.ignore()
+                return
             geometry = self.normalGeometry()
             if geometry.isValid():
                 self.settings.setValue("window/normal_geometry", geometry)
             self.settings.setValue("window/maximized", self.isMaximized())
             event.accept()
+
+    def confirm_close(self) -> bool:
+        dialog = QMessageBox(self)
+        dialog.setIcon(QMessageBox.Icon.Question)
+        dialog.setWindowTitle("Conferma chiusura")
+        dialog.setText("Vuoi davvero chiudere VisiLens?")
+        dialog.setInformativeText(
+            "I gruppi trovati e le selezioni correnti non saranno più disponibili "
+            "alla prossima apertura. Nessuna immagine verrà eliminata.")
+        close_button = dialog.addButton("Chiudi", QMessageBox.ButtonRole.AcceptRole)
+        cancel_button = dialog.addButton("Annulla", QMessageBox.ButtonRole.RejectRole)
+        dialog.setDefaultButton(cancel_button)
+        dialog.exec()
+        return dialog.clickedButton() is close_button
 
 
 def main() -> None:
