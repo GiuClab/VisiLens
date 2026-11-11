@@ -623,6 +623,14 @@ class MainWindow(QMainWindow):
                 widget.setProperty("source_caption", source)
             widget.setText(tr(source))
         self.support_button.setText("❤️ " + tr("Support me"))
+        root = self.tree.topLevelItem(0)
+        if root is not None:
+            for item in (root, *(root.child(index) for index in range(root.childCount()))):
+                original = item.data(0, Qt.ItemDataRole.UserRole.value + 10)
+                if original:
+                    item.setText(0, tr(original))
+        if self.groups:
+            self.render_groups()
         mode = self.MODES[self.mode_slider.value()]
         self.filter_name.setText(tr({"Strict": "Strict — confronto rigoroso",
                                      "Basic": "Basic — somiglianza equilibrata",
@@ -653,6 +661,7 @@ class MainWindow(QMainWindow):
     def setup_tree(self) -> None:
         self.tree.blockSignals(True)
         root = QTreeWidgetItem(["Questo PC"])
+        root.setData(0, Qt.ItemDataRole.UserRole.value + 10, "Questo PC")
         root.setFlags(root.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
         root.setIcon(0, self.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon))
         self.tree.addTopLevelItem(root)
@@ -688,6 +697,8 @@ class MainWindow(QMainWindow):
                         label: str | None = None) -> QTreeWidgetItem:
         name = label or folder.name or str(folder)
         item = QTreeWidgetItem([name])
+        if label is not None:
+            item.setData(0, Qt.ItemDataRole.UserRole.value + 10, label)
         item.setData(0, Qt.ItemDataRole.UserRole, str(folder))
         item.setIcon(0, self.icon_provider.icon(QFileInfo(str(folder))))
         item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
