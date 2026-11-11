@@ -3,7 +3,7 @@
 An open-source, cross-platform desktop application for finding **visually similar photos**.
 Inspired by the workflow of VisiPics; not affiliated with its authors.
 
-**Status: 0.6.1 — Windows-first early preview.** Windows 10/11, Python 3.10+.
+**Status: 0.6.2 — Windows-first early preview.** Windows 10/11, Python 3.10+.
 
 ## Features
 
@@ -21,11 +21,22 @@ Inspired by the workflow of VisiPics; not affiliated with its authors.
   rather than limiting the display to pairs or a few representative pictures.
 - Click a thumbnail to show it in the large preview and highlight its tile
   with a blue border. **Only the checkbox** selects or deselects a file for
-  the Trash; viewing a picture never selects it for deletion.
+  the Trash; viewing a picture never selects it for deletion. **Red borders**
+  mark files selected for Trash, including Auto-Select results, and take priority
+  over the blue preview border.
+- Click the file path below the large preview to reveal that file in Windows
+  File Explorer, with the file selected.
 - The folder tree includes Windows user locations (Desktop, Documents,
   Downloads, Pictures, Music and Video) with native file icons, plus the disks.
 - Similarity slider runs from Loose (blue), through Basic (green), to Strict (red).
-- File, Language and Help menus (Italian available; English planned).
+- File, Language, Opzioni and Help menus (Italian available; English planned).
+- **Opzioni → Includi file e cartelle nascosti**: opt-in traversal of hidden
+  files and folders, saved between launches; Windows hidden/system attributes
+  and dot-prefixed names are excluded by default.
+- Switching similarity level uses a background worker and a per-scan cache of
+  already calculated groups, with a short debounce for rapid slider changes.
+  Groups are rendered in batches; thumbnails are decoded only near the visible
+  viewport to avoid UI freezes on large collections.
 - SQLite fingerprint cache on Windows in `%LOCALAPPDATA%\\VisiLens` to speed up
   subsequent scans of unchanged files (paths and image fingerprints are stored locally).
 - Optional **Selezione intelligente** for Strict groups, with resolution preference,
@@ -59,6 +70,8 @@ If `visilens` is not on your PATH, run `python -m visilens.app`.
 
 Groups with three, four or more copies are shown in full. Auto-Select and
 manual checkbox selections apply to every image in every group.
+Click a blue underlined image path in the preview to open its location in
+Windows Explorer. Enable hidden images explicitly in **Opzioni** if needed.
 
 ### Selezione intelligente (Auto-Select)
 
@@ -97,8 +110,10 @@ the same artwork over a solid background versus a transparent background is
 not considered an exact visual duplicate. The SQLite cache stores alpha
 fingerprints in a new schema, so older cached RGB-only results are not reused.
 
-The current implementation uses an O(n²) similarity comparison and is aimed
-at small-to-medium libraries. Future work: indexing for large libraries,
+The current implementation uses an O(n²) similarity comparison, now executed in
+a worker thread instead of blocking the UI. Results are cached for the three
+levels during a scan and cleared on rescanning or after moving files to Trash.
+Future work: indexing for very large libraries,
 better cropped-image matching, packaging signed desktop installers, localization,
 and persistence of full scan results.
 
@@ -128,5 +143,5 @@ describe the inspiration.
 VisiLens è un programma desktop open source per trovare foto duplicate o
 visivamente simili, attualmente sviluppato e distribuito per Windows. Aggiungi le cartelle, avvia la
 scansione, confronta le anteprime e scegli quali immagini spostare nel cestino.
-Nessun file viene eliminato automaticamente. La versione 0.6.1 è una prima
+Nessun file viene eliminato automaticamente. La versione 0.6.2 è una prima
 anteprima: controlla sempre le selezioni e conserva una copia dei tuoi archivi.
