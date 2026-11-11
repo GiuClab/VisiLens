@@ -6,7 +6,19 @@ import os
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QDir, QObject, QSettings, Qt, QThread, QTimer, QUrl, Signal, Slot
+from PySide6.QtCore import (
+    QDir,
+    QFileInfo,
+    QObject,
+    QSettings,
+    QStandardPaths,
+    Qt,
+    QThread,
+    QTimer,
+    QUrl,
+    Signal,
+    Slot,
+)
 from PySide6.QtGui import QAction, QDesktopServices, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -14,6 +26,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFileDialog,
+    QFileIconProvider,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -26,6 +39,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QSlider,
+    QStyle,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -41,7 +55,7 @@ QMainWindow, QWidget#root { background: #f5f6fb; }
 QWidget { font-family: 'Segoe UI', Arial; color: #242936; font-size: 12px; }
 QFrame#panel, QFrame#stat, QFrame#group, QFrame#tile {
  background: white; border: 1px solid #dfe3ed; border-radius: 12px; }
-QFrame#tile[selected="true"] { border: 2px solid #3d61da; background: #f0f4ff; }
+QFrame#tile[active="true"] { border: 2px solid #3d61da; background: #f0f4ff; }
 QLabel#title { font-size: 18px; font-weight: 750; }
 QLabel#metric { font-size: 25px; font-weight: 750; }
 QLabel#muted { color: #677082; }
@@ -122,7 +136,7 @@ class ImageTile(QFrame):
         super().__init__()
         self.image = image
         self.setObjectName("tile")
-        self.setProperty("selected", False)
+        self.setProperty("active", False)
         self.setFixedWidth(142)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(5, 5, 5, 5)
@@ -130,7 +144,7 @@ class ImageTile(QFrame):
         self.button = QPushButton()
         self.button.setObjectName("thumb")
         self.button.setFixedSize(130, 110)
-        self.button.setToolTip(f"{image.path}\nClicca per selezionare o deselezionare")
+        self.button.setToolTip(f"{image.path}\nClicca per vedere l'anteprima")
         pixmap = QPixmap(str(image.path))
         if not pixmap.isNull():
             self.button.setIcon(QIcon(pixmap))
@@ -148,20 +162,20 @@ class ImageTile(QFrame):
                              "muted"))
         self.checkbox = QCheckBox("Cestino")
         layout.addWidget(self.checkbox)
-        self.button.clicked.connect(lambda: self.checkbox.setChecked(not self.checkbox.isChecked()))
         self.checkbox.toggled.connect(lambda checked: callback(image.path, checked))
 
-    def set_selected(self, checked: bool) -> None:
+    def set_state(self, checked: bool, active: bool) -> None:
         self.checkbox.blockSignals(True)
         self.checkbox.setChecked(checked)
         self.checkbox.blockSignals(False)
-        self.setProperty("selected", checked)
+        self.setProperty("active", active)
         self.style().unpolish(self)
         self.style().polish(self)
 
 
 class MainWindow(QMainWindow):
-    MODES = ("Strict", "Basic", "Loose")
+    MODES = ("Loose", "Basic", "Strict")
+    MODE_COLORS = ("#385ad0", "#1baf71", "#d44747")
 
     def __init__(self) -> None:
         super().__init__()
@@ -180,6 +194,7 @@ class MainWindow(QMainWindow):
         self.worker: ScanWorker | None = None
         self.preview_path: Path | None = None
         self.image_by_path: dict[Path, ImageInfo] = {}
+        self.icon_provider = QFileIconProvider()
 
         self.create_menus()
         root = QWidget()
@@ -210,7 +225,7 @@ class MainWindow(QMainWindow):
         remove.clicked.connect(self.remove_folder)
         left_layout.addWidget(remove)
         left_layout.addWidget(lbl("Livello di somiglianza", "section"))
-        self.filter_name = lbl("Strict — confronto rigoroso", "muted")
+        self.filter_name = lbl("Loose — confronto flessibile", "muted")
         left_layout.addWidget(self.filter_name)
         self.mode_slider = QSlider(Qt.Orientation.Horizontal)
         self.mode_slider.setRange(0, 2)
@@ -219,6 +234,7 @@ class MainWindow(QMainWindow):
         self.mode_slider.setTickInterval(1)
         self.mode_slider.valueChanged.connect(self.mode_changed)
         left_layout.addWidget(self.mode_slider)
+        self.set_mode_color(0)
         scan_buttons = QHBoxLayout()
         self.start_button = QPushButton("▶ Avvia scansione")
         self.start_button.setObjectName("primary")
@@ -320,7 +336,7 @@ class MainWindow(QMainWindow):
         help_menu = self.menuBar().addMenu("Help")
         about = QAction("Informazioni su VisiLens", self)
         about.triggered.connect(lambda: QMessageBox.information(
-            self, "VisiLens", "VisiLens 0.6.0 — anteprima Windows\n"
+            self, "VisiLens", "VisiLens 0.6.1 — anteprima Windows\n"
             "Trova immagini duplicate, controlla le selezioni prima del cestino."))
         help_menu.addAction(about)
         repo = QAction("Progetto su GitHub", self)
@@ -332,19 +348,42 @@ class MainWindow(QMainWindow):
         self.tree.blockSignals(True)
         root = QTreeWidgetItem(["Questo PC"])
         root.setFlags(root.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
+        root.setIcon(0, self.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon))
         self.tree.addTopLevelItem(root)
+        locations = (
+            ("Desktop", QStandardPaths.StandardLocation.DesktopLocation),
+            ("Documenti", QStandardPaths.StandardLocation.DocumentsLocation),
+            ("Download", QStandardPaths.StandardLocation.DownloadLocation),
+            ("Immagini", QStandardPaths.StandardLocation.PicturesLocation),
+            ("Musica", QStandardPaths.StandardLocation.MusicLocation),
+            ("Video", QStandardPaths.StandardLocation.MoviesLocation),
+        )
+        seen: set[Path] = set()
+        for title, location in locations:
+            folder_name = QStandardPaths.writableLocation(location)
+            if folder_name:
+                folder = Path(folder_name)
+                if folder not in seen:
+                    self.add_tree_folder(root, folder, title)
+                    seen.add(folder)
+        objects_3d = Path.home() / "3D Objects"
+        if sys.platform == "win32" and objects_3d.is_dir():
+            self.add_tree_folder(root, objects_3d, "Oggetti 3D")
         drives = [Path(info.absoluteFilePath()) for info in QDir.drives()]
         if not drives:
             drives = [Path.home()]
         for drive in drives:
-            self.add_tree_folder(root, drive)
+            drive_label = f"Disco locale ({drive.drive or str(drive).rstrip('/')})"
+            self.add_tree_folder(root, drive, drive_label)
         root.setExpanded(True)
         self.tree.blockSignals(False)
 
-    def add_tree_folder(self, parent: QTreeWidgetItem, folder: Path) -> QTreeWidgetItem:
-        name = folder.name or str(folder)
+    def add_tree_folder(self, parent: QTreeWidgetItem, folder: Path,
+                        label: str | None = None) -> QTreeWidgetItem:
+        name = label or folder.name or str(folder)
         item = QTreeWidgetItem([name])
         item.setData(0, Qt.ItemDataRole.UserRole, str(folder))
+        item.setIcon(0, self.icon_provider.icon(QFileInfo(str(folder))))
         item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
         item.setCheckState(0, Qt.CheckState.Checked if folder in self.folders
                            else Qt.CheckState.Unchecked)
@@ -409,7 +448,15 @@ class MainWindow(QMainWindow):
         self.filter_name.setText({"Strict": "Strict — confronto rigoroso",
                                   "Basic": "Basic — somiglianza equilibrata",
                                   "Loose": "Loose — confronto flessibile"}[mode])
+        self.set_mode_color(index)
         self.refresh_groups()
+
+    def set_mode_color(self, index: int) -> None:
+        color = self.MODE_COLORS[index]
+        self.mode_slider.setStyleSheet(
+            "QSlider::handle:horizontal { width: 16px; margin: -5px 0; "
+            f"border-radius: 8px; background: {color}; }}"
+        )
 
     def start_scan(self) -> None:
         if self.thread is not None:
@@ -501,7 +548,7 @@ class MainWindow(QMainWindow):
                                alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
             body.addLayout(grid)
             self.groups_layout.addWidget(frame)
-        self.auto_button.setEnabled(bool(self.groups) and self.mode_slider.value() == 0)
+        self.auto_button.setEnabled(bool(self.groups) and self.mode_slider.value() == 2)
         self.update_stats()
         self.update_selection_ui()
         if self.groups:
@@ -517,12 +564,11 @@ class MainWindow(QMainWindow):
             self.selected_paths.add(path)
         else:
             self.selected_paths.discard(path)
-        self.show_preview(path)
         self.update_selection_ui()
 
     def update_selection_ui(self) -> None:
         for path, tile in self.tiles.items():
-            tile.set_selected(path in self.selected_paths)
+            tile.set_state(path in self.selected_paths, path == self.preview_path)
         for group, badge in zip(self.groups, self.group_labels, strict=True):
             count = sum(info.path in self.selected_paths for info in group)
             badge.setText(f"{count} per il cestino" if count else "")
@@ -540,6 +586,7 @@ class MainWindow(QMainWindow):
         if info is None:
             return
         self.preview_path = path
+        self.update_selection_ui()
         self.preview_name.setText(path.name)
         self.preview_details.setText(f"{info.width} × {info.height} · {pretty_bytes(info.bytes)}\n"
                                      f"{path}\n" +
@@ -581,7 +628,7 @@ class MainWindow(QMainWindow):
         return metric
 
     def auto_select(self) -> None:
-        if self.mode_slider.value() != 0 or not self.groups:
+        if self.mode_slider.value() != 2 or not self.groups:
             return
         saved_folders = self.settings.value("protected_folders", [], type=list)
         options = SelectionOptions(
