@@ -13,7 +13,7 @@ from visilens.app import MainWindow
 from visilens.core import ImageInfo
 
 
-def test_four_copies_are_all_visible_and_comparable() -> None:
+def test_four_copies_visible_and_click_to_select() -> None:
     app = QApplication.instance() or QApplication([])
     window = MainWindow()
     images = [
@@ -24,25 +24,19 @@ def test_four_copies_are_all_visible_and_comparable() -> None:
     ]
     window.images = images
     window.refresh_groups()
-    window.resize(1150, 720)
+    window.resize(1180, 720)
     window.show()
     app.processEvents()
-    assert window.content_stack.count() == 2
-    assert window.group_list.horizontalScrollBar().maximum() == 0
-    assert window.preview_layout.count() == 4
-    assert window.compare_a.count() == 4
-    assert window.compare_b.count() == 4
-    window.compare_a.setCurrentIndex(2)
-    window.compare_b.setCurrentIndex(3)
-    assert window.comparison_images() == (window.groups[0][2], window.groups[0][3])
-    assert window.preview.isVisible()
-    assert not window.compare_image_a.isVisible()
-    window.set_view(1)
-    app.processEvents()
-    assert window.compare_image_a.isVisible()
-    assert not window.preview.isVisible()
-    window.set_view(0)
+    assert len(window.tiles) == 4
+    assert len(window.group_labels) == 1
+    path = window.groups[0][2].path
+    window.tiles[path].button.click()
+    assert path in window.selected_paths
+    assert window.preview_path == path
+    window.tiles[path].button.click()
+    assert path not in window.selected_paths
     window.auto_select()
     assert len(window.selected_paths) == 3
-    assert sum(checkbox.isChecked() for _, checkbox in window.checks) == 3
+    assert sum(tile.checkbox.isChecked() for tile in window.tiles.values()) == 3
+    assert "3 per il cestino" in window.group_labels[0].text()
     window.close()
