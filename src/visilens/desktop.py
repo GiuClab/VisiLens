@@ -272,7 +272,7 @@ class ImageTile(QFrame):
         self.button = QPushButton()
         self.button.setObjectName("thumb")
         self.button.setFixedSize(130, 110)
-        self.button.setToolTip(f"{image.path}\n{tr(\"Clicca per vedere l'anteprima\")}")
+        self.button.setToolTip(str(image.path) + "\\n" + tr("Clicca per vedere l'anteprima"))
         self.button.setText(tr("Anteprima…"))
         self.thumbnail_loaded = False
         layout.addWidget(self.button)
