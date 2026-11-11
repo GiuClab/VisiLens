@@ -538,13 +538,13 @@ class MainWindow(QMainWindow):
         self.theme_actions = {}
         for code, title in (("system", "Segui Windows"), ("light", "Chiaro"),
                             ("dark", "Scuro")):
-            action = add(self.theme_menu, title, lambda checked=False, code=code: self.change_theme(code))
+            action = add(self.theme_menu, title, lambda checked=False, code=code: self.change_theme(code))  # noqa: E501
             action.setCheckable(True)
             action.setChecked(code == self.settings.value("ui/theme", "system"))
             self.theme_actions[code] = action
         self.options_menu.addSeparator()
         self.hidden_action = add(self.options_menu, "Includi file e cartelle nascosti",
-                                 lambda checked=False: self.settings.setValue("include_hidden", checked))
+                                 lambda checked=False: self.settings.setValue("include_hidden", checked))  # noqa: E501
         self.hidden_action.setCheckable(True)
         self.hidden_action.setChecked(self.settings.value("include_hidden", False, type=bool))
 
@@ -820,7 +820,7 @@ class MainWindow(QMainWindow):
         self.images = images
         self.image_by_path = {image.path: image for image in images}
         self.refresh_groups()
-        self.status.setText(tr("{images} immagini analizzate · confronto in corso · {errors} errori").format(
+        self.status.setText(tr("{images} immagini analizzate · confronto in corso · {errors} errori").format(  # noqa: E501
             images=len(images), errors=len(errors)))
         if errors:
             QMessageBox.warning(self, tr("File ignorati"), "\n".join(errors[:10]))
@@ -853,7 +853,7 @@ class MainWindow(QMainWindow):
             self.apply_groups(self.group_cache[mode])
             return
         if self.group_thread is not None:
-            self.status.setText(tr("Attendo il calcolo in corso · prossimo livello: {mode}").format(mode=mode))
+            self.status.setText(tr("Attendo il calcolo in corso · prossimo livello: {mode}").format(mode=mode))  # noqa: E501
             return
         self.status.setText(tr("Calcolo duplicati {mode} in background…").format(mode=mode))
         thread = QThread(self)
@@ -884,7 +884,7 @@ class MainWindow(QMainWindow):
     def on_group_error(self, generation: int, mode: str, error: str) -> None:
         if generation == self.image_generation:
             self.group_cache[mode] = []
-            self.status.setText(tr("Errore confronto {mode}: {error}").format(mode=mode, error=error))
+            self.status.setText(tr("Errore confronto {mode}: {error}").format(mode=mode, error=error))  # noqa: E501
 
     @Slot()
     def on_group_finished(self) -> None:
@@ -995,7 +995,7 @@ class MainWindow(QMainWindow):
             count = sum(info.path in self.selected_paths for info in group)
             badge.setText(tr("{count} per il cestino").format(count=count) if count else "")
         count = len(self.selected_paths)
-        self.selection_info.setText(tr("{count} file selezionati per il cestino").format(count=count)
+        self.selection_info.setText(tr("{count} file selezionati per il cestino").format(count=count)  # noqa: E501
                                     if count != 1 else tr("1 file selezionato per il cestino"))
         if self.preview_path is not None:
             self.update_preview_details()
@@ -1111,7 +1111,7 @@ class MainWindow(QMainWindow):
         proposal = propose_selection(self.groups, options)
         self.selected_paths = set(proposal.trash_paths)
         self.update_selection_ui()
-        self.status.setText(tr("Auto-Select: {count} file selezionati · controlla prima di spostare nel cestino").format(
+        self.status.setText(tr("Auto-Select: {count} file selezionati · controlla prima di spostare nel cestino").format(  # noqa: E501
             count=len(self.selected_paths)))
 
     def configure_auto_select(self) -> None:
@@ -1126,7 +1126,7 @@ class MainWindow(QMainWindow):
         size = QCheckBox(tr("A parità, preferisci il file più grande"))
         size.setChecked(self.settings.value("prefer_file_size", True, type=bool))
         layout.addWidget(size)
-        layout.addWidget(lbl(tr("La dimensione del file non garantisce qualità migliore."), "muted"))
+        layout.addWidget(lbl(tr("La dimensione del file non garantisce qualità migliore."), "muted"))  # noqa: E501
         layout.addWidget(lbl(tr("Cartelle protette"), "section"))
         protected = QListWidget()
         protected.setMinimumHeight(90)
@@ -1170,7 +1170,7 @@ class MainWindow(QMainWindow):
     def trash_selected(self) -> None:
         targets = list(self.selected_paths)
         if not targets:
-            QMessageBox.information(self, tr("Nessuna selezione"), tr("Seleziona prima le immagini."))
+            QMessageBox.information(self, tr("Nessuna selezione"), tr("Seleziona prima le immagini."))  # noqa: E501
             return
         if any(all(image.path in self.selected_paths for image in group)
                for group in self.groups):
@@ -1178,7 +1178,7 @@ class MainWindow(QMainWindow):
                                 tr("Deve rimanere almeno un'immagine per gruppo."))
             return
         answer = QMessageBox.question(
-            self, tr("Conferma cestino"), tr("Spostare {count} file nel cestino?\nQuesta operazione non può essere annullata direttamente da VisiLens.").format(count=len(targets)),
+            self, tr("Conferma cestino"), tr("Spostare {count} file nel cestino?\nQuesta operazione non può essere annullata direttamente da VisiLens.").format(count=len(targets)),  # noqa: E501
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -1204,7 +1204,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event) -> None:
         if self.thread is not None or self.group_thread is not None:
             QMessageBox.information(self, tr("Scansione in corso"),
-                                    tr("Attendi il completamento dell'elaborazione prima di chiudere."))
+                                    tr("Attendi il completamento dell'elaborazione prima di chiudere."))  # noqa: E501
             event.ignore()
         else:
             if self.groups and not self.confirm_close():
