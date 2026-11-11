@@ -60,6 +60,41 @@ ROWS = {
 "Conferma cestino": ("Confirm Recycle Bin","Papierkorb bestätigen","Confirmer la mise à la corbeille"),
 "Support me": ("Support me","Unterstütze mich","Soutenez-moi"),
 }
+ROWS.update({
+"❤️ Support me": ("❤️ Support me","❤️ Unterstütze mich","❤️ Soutenez-moi"),
+"✦ Auto-Select": ("✦ Auto-Select","✦ Auto-Select","✦ Auto-Select"),
+"Auto-Select": ("Auto-Select","Auto-Select","Auto-Select"),
+"⚙ Criteri": ("⚙ Criteria","⚙ Kriterien","⚙ Critères"),
+"Criteri Auto-Select": ("Auto-Select criteria","Auto-Select-Kriterien","Critères Auto-Select"),
+"Quale copia vuoi conservare?": ("Which copy should be kept?","Welche Kopie soll behalten werden?","Quelle copie conserver ?"),
+"Preferisci la risoluzione maggiore": ("Prefer higher resolution","Höhere Auflösung bevorzugen","Privilégier la meilleure résolution"),
+"A parità, preferisci il file più grande": ("If tied, prefer larger files","Bei Gleichstand größere Datei bevorzugen","À égalité, privilégier le fichier le plus volumineux"),
+"La dimensione del file non garantisce qualità migliore.": ("File size does not guarantee higher quality.","Dateigröße garantiert keine höhere Qualität.","La taille du fichier ne garantit pas une meilleure qualité."),
+"Cartelle protette": ("Protected folders","Geschützte Ordner","Dossiers protégés"),
+"Aggiungi": ("Add","Hinzufügen","Ajouter"),
+"Rimuovi": ("Remove","Entfernen","Supprimer"),
+"Cestino": ("Recycle Bin","Papierkorb","Corbeille"),
+"Scansione in corso…": ("Scanning…","Scan läuft…","Analyse en cours…"),
+"Arresto dopo l'immagine corrente…": ("Stopping after current image…","Stopp nach aktuellem Bild…","Arrêt après l'image en cours…"),
+"Seleziona almeno una cartella.": ("Select at least one folder.","Bitte mindestens einen Ordner auswählen.","Sélectionnez au moins un dossier."),
+"Scansione non riuscita": ("Scan failed","Scan fehlgeschlagen","Échec de l’analyse"),
+"Errore durante la scansione": ("Error during scan","Fehler beim Scannen","Erreur pendant l’analyse"),
+"File ignorati": ("Files skipped","Übersprungene Dateien","Fichiers ignorés"),
+"Conferma chiusura": ("Confirm exit","Beenden bestätigen","Confirmer la fermeture"),
+"Vuoi davvero chiudere VisiLens?": ("Are you sure you want to close VisiLens?","VisiLens wirklich schließen?","Voulez-vous vraiment fermer VisiLens ?"),
+"I gruppi trovati e le selezioni correnti non saranno più disponibili alla prossima apertura. Nessuna immagine verrà eliminata.": ("Current groups and selections will not be available next time. No images will be deleted.","Aktuelle Gruppen und Auswahlen sind beim nächsten Start nicht verfügbar. Es werden keine Bilder gelöscht.","Les groupes et sélections actuels ne seront plus disponibles au prochain démarrage. Aucune image ne sera supprimée."),
+"Attendi il completamento dell'elaborazione prima di chiudere.": ("Wait until processing finishes before closing.","Bitte warten Sie bis die Verarbeitung beendet ist.","Attendez la fin du traitement avant de fermer."),
+"Chiudi": ("Close","Schließen","Fermer"),
+"Annulla": ("Cancel","Abbrechen","Annuler"),
+"Nessuna selezione": ("No selection","Keine Auswahl","Aucune sélection"),
+"Seleziona prima le immagini.": ("Select images first.","Wählen Sie zuerst Bilder aus.","Sélectionnez d'abord les images."),
+"Conserva un'immagine": ("Keep an image","Bild behalten","Conserver une image"),
+"Conferma cestino": ("Confirm Recycle Bin","Papierkorb bestätigen","Confirmer la mise à la corbeille"),
+"Anteprima non disponibile": ("Preview unavailable","Vorschau nicht verfügbar","Aperçu indisponible"),
+"Selezione annullata; nessun file modificato": ("Selection cleared; no files changed","Auswahl aufgehoben; keine Dateien geändert","Sélection annulée ; aucun fichier modifié"),
+"Criteri salvati. Premi Auto-Select per applicarli.": ("Criteria saved. Use Auto-Select to apply them.","Kriterien gespeichert. Mit Auto-Select anwenden.","Critères enregistrés. Utilisez Auto-Select pour les appliquer."),
+})
+
 def set_language(language: str) -> None:
     global _active
     if language not in LANGUAGES:
