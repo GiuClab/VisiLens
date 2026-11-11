@@ -3,7 +3,7 @@
 An open-source, cross-platform desktop application for finding **visually similar photos**.
 Inspired by the workflow of VisiPics; not affiliated with its authors.
 
-**Status: 0.6.3 — Windows-first early preview.** Windows 10/11, Python 3.10+.
+**Status: 0.6.4 — Windows-first early preview.** Windows 10/11, Python 3.10+.
 
 ## Features
 
@@ -13,6 +13,9 @@ Inspired by the workflow of VisiPics; not affiliated with its authors.
 - Browse groups with thumbnails, file paths, resolution and size.
 - Show the highest-resolution file first; manually choose every file to trash.
 - Move explicitly selected files to the **system Trash** after confirmation.
+- Ask for confirmation before closing when duplicate groups are present; canceling
+  leaves the current groups and Trash selections untouched. With no groups, close
+  normally. No images are deleted on exit.
 - Cancel scanning; skip and report damaged/unreadable files.
 - Three-pane Italian-language interface: Windows-style folder tree on the left,
   duplicate groups and scan statistics in the center, large preview and file
@@ -149,5 +152,5 @@ describe the inspiration.
 VisiLens è un programma desktop open source per trovare foto duplicate o
 visivamente simili, attualmente sviluppato e distribuito per Windows. Aggiungi le cartelle, avvia la
 scansione, confronta le anteprime e scegli quali immagini spostare nel cestino.
-Nessun file viene eliminato automaticamente. La versione 0.6.3 è una prima
+Nessun file viene eliminato automaticamente. La versione 0.6.4 è una prima
 anteprima: controlla sempre le selezioni e conserva una copia dei tuoi archivi.
