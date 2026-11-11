@@ -548,6 +548,8 @@ class MainWindow(QMainWindow):
         self.hidden_action.setCheckable(True)
         self.hidden_action.setChecked(self.settings.value("include_hidden", False, type=bool))
 
+        add(self.help_menu, "Guida all\'utilizzo", lambda: QDesktopServices.openUrl(
+            QUrl("https://github.com/GiuClab/VisiLens#usage")), "F1")
         add(self.help_menu, "Informazioni su VisiLens", self.show_about)
         add(self.help_menu, "Progetto su GitHub", lambda: QDesktopServices.openUrl(
             QUrl("https://github.com/GiuClab/VisiLens")))
