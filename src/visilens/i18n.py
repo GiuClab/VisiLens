@@ -95,6 +95,31 @@ ROWS.update({
 "Criteri salvati. Premi Auto-Select per applicarli.": ("Criteria saved. Use Auto-Select to apply them.","Kriterien gespeichert. Mit Auto-Select anwenden.","Critères enregistrés. Utilisez Auto-Select pour les appliquer."),
 })
 
+ROWS.update({
+"Seleziona cartella": ("Select folder","Ordner auswählen","Choisir un dossier"),
+"Anteprima…": ("Preview…","Vorschau…","Aperçu…"),
+"Selezionata per il cestino": ("Marked for Recycle Bin","Für den Papierkorb markiert","Marquée pour la corbeille"),
+"Da conservare": ("Keep","Behalten","Conserver"),
+"Esplora file": ("File Explorer","Datei-Explorer","Explorateur de fichiers"),
+"File ignorati": ("Skipped files","Übersprungene Dateien","Fichiers ignorés"),
+"Gruppo {number} · {count} immagini": ("Group {number} · {count} images","Gruppe {number} · {count} Bilder","Groupe {number} · {count} images"),
+"{count} per il cestino": ("{count} for Recycle Bin","{count} für Papierkorb","{count} pour la corbeille"),
+"{count} file selezionati per il cestino": ("{count} files selected for Recycle Bin","{count} Dateien für Papierkorb ausgewählt","{count} fichiers sélectionnés pour la corbeille"),
+"1 file selezionato per il cestino": ("1 file selected for Recycle Bin","1 Datei für Papierkorb ausgewählt","1 fichier sélectionné pour la corbeille"),
+"{images} immagini · {groups} gruppi ({mode})": ("{images} images · {groups} groups ({mode})","{images} Bilder · {groups} Gruppen ({mode})","{images} images · {groups} groupes ({mode})"),
+"{images} immagini analizzate · confronto in corso · {errors} errori": ("{images} images scanned · comparing · {errors} errors","{images} Bilder analysiert · Vergleich läuft · {errors} Fehler","{images} images analysées · comparaison en cours · {errors} erreurs"),
+"Attendo il calcolo in corso · prossimo livello: {mode}": ("Waiting for processing · next level: {mode}","Berechnung läuft · nächste Stufe: {mode}","Calcul en cours · niveau suivant : {mode}"),
+"Calcolo duplicati {mode} in background…": ("Comparing duplicates in {mode} mode…","Duplikatvergleich im Modus {mode}…","Comparaison des doublons en mode {mode}…"),
+"Errore confronto {mode}: {error}": ("Matching error ({mode}): {error}","Vergleichsfehler ({mode}): {error}","Erreur de comparaison ({mode}) : {error}"),
+"Auto-Select: {count} file selezionati · controlla prima di spostare nel cestino": ("Auto-Select: {count} files selected · review before moving to Recycle Bin","Auto-Select: {count} Dateien ausgewählt · vor dem Verschieben prüfen","Auto-Select : {count} fichiers sélectionnés · vérifiez avant la mise à la corbeille"),
+"Deve rimanere almeno un'immagine per gruppo.": ("At least one image must remain in every group.","In jeder Gruppe muss mindestens ein Bild bleiben.","Au moins une image doit rester dans chaque groupe."),
+"Spostare {count} file nel cestino?\nQuesta operazione non può essere annullata direttamente da VisiLens.": ("Move {count} files to Recycle Bin?\nThis operation cannot be undone from VisiLens.","{count} Dateien in den Papierkorb verschieben?\nDies kann nicht direkt in VisiLens rückgängig gemacht werden.","Déplacer {count} fichiers dans la corbeille ?\nCette opération ne peut pas être annulée dans VisiLens."),
+"{moved} file nel cestino · {errors} errori": ("{moved} files moved to Recycle Bin · {errors} errors","{moved} Dateien in den Papierkorb verschoben · {errors} Fehler","{moved} fichiers dans la corbeille · {errors} erreurs"),
+"File non spostati": ("Files not moved","Dateien nicht verschoben","Fichiers non déplacés"),
+"Cartella protetta": ("Protected folder","Geschützter Ordner","Dossier protégé"),
+"Clicca per vedere l'anteprima": ("Click to preview","Zum Anzeigen klicken","Cliquer pour prévisualiser"),
+})
+
 def set_language(language: str) -> None:
     global _active
     if language not in LANGUAGES:
