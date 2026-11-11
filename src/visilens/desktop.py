@@ -272,7 +272,7 @@ class ImageTile(QFrame):
         self.button = QPushButton()
         self.button.setObjectName("thumb")
         self.button.setFixedSize(130, 110)
-        self.button.setToolTip(f"{image.path}\nClicca per vedere l'anteprima")
+        self.button.setToolTip(f"{image.path}\n{tr(\"Clicca per vedere l'anteprima\")}")
         self.button.setText(tr("Anteprima…"))
         self.thumbnail_loaded = False
         layout.addWidget(self.button)
@@ -1172,8 +1172,8 @@ class MainWindow(QMainWindow):
             return
         if any(all(image.path in self.selected_paths for image in group)
                for group in self.groups):
-            QMessageBox.warning(self, "Conserva un'immagine",
-                                "Deve rimanere almeno un'immagine per gruppo.")
+            QMessageBox.warning(self, tr("Conserva un'immagine"),
+                                tr("Deve rimanere almeno un'immagine per gruppo."))
             return
         answer = QMessageBox.question(
             self, tr("Conferma cestino"), tr("Spostare {count} file nel cestino?\nQuesta operazione non può essere annullata direttamente da VisiLens.").format(count=len(targets)),
@@ -1202,7 +1202,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event) -> None:
         if self.thread is not None or self.group_thread is not None:
             QMessageBox.information(self, tr("Scansione in corso"),
-                                    "Attendi il completamento dell'elaborazione prima di chiudere.")
+                                    tr("Attendi il completamento dell'elaborazione prima di chiudere."))
             event.ignore()
         else:
             if self.groups and not self.confirm_close():
