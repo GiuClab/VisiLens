@@ -7,12 +7,16 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 from PySide6.QtCore import (
     QDir,
     QFileInfo,
     QObject,
     QPoint,
+    QPointF,
+    QRect,
+    QRectF,
     QSettings,
     QSize,
     QStandardPaths,
@@ -23,7 +27,17 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtGui import QAction, QDesktopServices, QIcon, QImageReader, QPixmap
+from PySide6.QtGui import (
+    QAction,
+    QColor,
+    QDesktopServices,
+    QIcon,
+    QImageReader,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -106,6 +120,71 @@ def pretty_bytes(size: int) -> str:
     if size >= 1024**2:
         return f"{size / 1024**2:.1f} MB"
     return f"{size / 1024:.0f} KB"
+
+
+def fit_window_rect(saved: QRect | None, available: QRect) -> QRect:
+    """Keep the restored window inside a screen's usable area, including the taskbar."""
+    # Leave a little room for the non-client Windows frame and title bar.
+    bounds = available.adjusted(12, 24, -12, -24)
+    if saved is None or not saved.isValid():
+        width = min(1450, max(1, bounds.width() - 24))
+        height = min(900, max(1, bounds.height() - 24))
+        rect = QRect(0, 0, width, height)
+        rect.moveCenter(bounds.center())
+        return rect
+    width = min(max(saved.width(), min(1000, bounds.width())), bounds.width())
+    height = min(max(saved.height(), min(580, bounds.height())), bounds.height())
+    left = max(bounds.left(), min(saved.left(), bounds.right() - width + 1))
+    top = max(bounds.top(), min(saved.top(), bounds.bottom() - height + 1))
+    return QRect(left, top, width, height)
+
+
+class StatIcon(QWidget):
+    """Small vector icons, drawn at screen resolution with the app's palette."""
+
+    COLORS: ClassVar[dict[str, tuple[str, str]]] = {
+        "photo": ("#385ad0", "#e6edff"),
+        "copies": ("#d44747", "#fbe7e9"),
+        "storage": ("#1b9b5c", "#e4f4e9"),
+    }
+
+    def __init__(self, kind: str) -> None:
+        super().__init__()
+        self.kind = kind
+        self.setFixedSize(62, 62)
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        foreground, background = self.COLORS[self.kind]
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(background))
+        painter.drawRoundedRect(QRectF(0, 0, 62, 62), 14, 14)
+        pen = QPen(QColor(foreground))
+        pen.setWidthF(2.5)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        if self.kind == "photo":
+            painter.drawRoundedRect(QRectF(17, 19, 29, 25), 4, 4)
+            painter.drawEllipse(QRectF(36, 24, 4, 4))
+            hills = QPainterPath(QPointF(19, 41))
+            hills.lineTo(27, 32)
+            hills.lineTo(32, 37)
+            hills.lineTo(37, 33)
+            hills.lineTo(44, 41)
+            painter.drawPath(hills)
+        elif self.kind == "copies":
+            painter.drawRoundedRect(QRectF(16, 16, 25, 25), 4, 4)
+            painter.drawRoundedRect(QRectF(23, 23, 25, 25), 4, 4)
+        else:
+            painter.drawEllipse(QRectF(18, 17, 26, 9))
+            painter.drawLine(QPointF(18, 22), QPointF(18, 41))
+            painter.drawLine(QPointF(44, 22), QPointF(44, 41))
+            painter.drawArc(QRectF(18, 35, 26, 10), 180 * 16, 180 * 16)
+            painter.drawArc(QRectF(18, 26, 26, 9), 180 * 16, 180 * 16)
+        painter.end()
 
 
 class ScanWorker(QObject):
@@ -225,13 +304,15 @@ class MainWindow(QMainWindow):
     MODES = ("Loose", "Basic", "Strict")
     MODE_COLORS = ("#385ad0", "#1baf71", "#d44747")
 
-    def __init__(self) -> None:
+    def __init__(self, settings: QSettings | None = None) -> None:
         super().__init__()
         self.setWindowTitle("VisiLens — Trova le foto duplicate")
-        self.resize(1600, 950)
-        self.setMinimumSize(1180, 720)
+        screen = QApplication.primaryScreen()
+        available = screen.availableGeometry() if screen else QRect(0, 0, 1366, 768)
+        self.setMinimumSize(min(1000, max(1, available.width() - 48)),
+                            min(580, max(1, available.height() - 64)))
         self.setStyleSheet(STYLE)
-        self.settings = QSettings("GiuClab", "VisiLens")
+        self.settings = settings if settings is not None else QSettings("GiuClab", "VisiLens")
         self.folders: list[Path] = []
         self.images: list[ImageInfo] = []
         self.groups: list[list[ImageInfo]] = []
@@ -313,9 +394,9 @@ class MainWindow(QMainWindow):
         middle.setSpacing(10)
         columns.addLayout(middle, 1)
         stats = QHBoxLayout()
-        self.stat_images = self.stat(stats, "▧  Immagini analizzate")
-        self.stat_duplicates = self.stat(stats, "▢  Duplicati trovati")
-        self.stat_space = self.stat(stats, "◉  Spazio recuperabile")
+        self.stat_images = self.stat(stats, "Immagini analizzate", "photo")
+        self.stat_duplicates = self.stat(stats, "Duplicati trovati", "copies")
+        self.stat_space = self.stat(stats, "Spazio recuperabile", "storage")
         middle.addLayout(stats)
         actions = QHBoxLayout()
         self.auto_button = QPushButton("✦ Auto-Select")
@@ -416,7 +497,7 @@ class MainWindow(QMainWindow):
         help_menu = self.menuBar().addMenu("Help")
         about = QAction("Informazioni su VisiLens", self)
         about.triggered.connect(lambda: QMessageBox.information(
-            self, "VisiLens", "VisiLens 0.6.2 — anteprima Windows\n"
+            self, "VisiLens", "VisiLens 0.6.3 — anteprima Windows\n"
             "Trova immagini duplicate, controlla le selezioni prima del cestino."))
         help_menu.addAction(about)
         repo = QAction("Progetto su GitHub", self)
@@ -829,13 +910,34 @@ class MainWindow(QMainWindow):
         self.stat_space.setText(pretty_bytes(potential))
 
     @staticmethod
-    def stat(layout: QHBoxLayout, title: str) -> QLabel:
-        frame, column = box("stat")
-        column.addWidget(lbl(title, "muted"))
+    def stat(layout: QHBoxLayout, title: str, icon: str) -> QLabel:
+        frame = QFrame()
+        frame.setObjectName("stat")
+        row = QHBoxLayout(frame)
+        row.setContentsMargins(12, 12, 12, 12)
+        row.setSpacing(12)
+        row.addWidget(StatIcon(icon))
+        column = QVBoxLayout()
+        column.setSpacing(2)
+        column.addWidget(lbl(title))
         metric = lbl("0", "metric")
         column.addWidget(metric)
+        row.addLayout(column, 1)
         layout.addWidget(frame, 1)
         return metric
+
+    def open_initial_window(self) -> None:
+        """First launch is maximized; later launches restore the user's preference."""
+        saved = self.settings.value("window/normal_geometry")
+        rect = saved if isinstance(saved, QRect) and saved.isValid() else None
+        screen = QApplication.screenAt(rect.center()) if rect is not None else None
+        screen = screen or QApplication.primaryScreen()
+        available = screen.availableGeometry() if screen else QRect(0, 0, 1366, 768)
+        self.setGeometry(fit_window_rect(rect, available))
+        if self.settings.value("window/maximized", True, type=bool):
+            self.showMaximized()
+        else:
+            self.show()
 
     def auto_select(self) -> None:
         if self.mode_slider.value() != 2 or not self.groups:
@@ -945,6 +1047,10 @@ class MainWindow(QMainWindow):
                                     "Attendi il completamento dell'elaborazione prima di chiudere.")
             event.ignore()
         else:
+            geometry = self.normalGeometry()
+            if geometry.isValid():
+                self.settings.setValue("window/normal_geometry", geometry)
+            self.settings.setValue("window/maximized", self.isMaximized())
             event.accept()
 
 
@@ -952,5 +1058,5 @@ def main() -> None:
     app = QApplication(sys.argv)
     app.setApplicationName("VisiLens")
     window = MainWindow()
-    window.show()
+    window.open_initial_window()
     sys.exit(app.exec())
