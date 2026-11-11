@@ -7,6 +7,24 @@ from PIL import Image, ImageDraw
 from visilens.core import discover, group_similar, inspect, is_duplicate, scan
 
 
+def test_hidden_files_and_folders_are_opt_in(tmp_path: Path) -> None:
+    visible = tmp_path / "visible.jpg"
+    hidden = tmp_path / ".hidden.jpg"
+    directory = tmp_path / ".private"
+    directory.mkdir()
+    nested = directory / "nested.jpg"
+    for path in (visible, hidden, nested):
+        Image.new("RGB", (48, 48), "blue").save(path, format="JPEG")
+    assert discover([tmp_path]) == [visible]
+    assert set(discover([tmp_path], include_hidden=True)) == {visible, hidden, nested}
+    images, errors = scan([tmp_path])
+    assert not errors
+    assert [info.path for info in images] == [visible]
+    all_images, errors = scan([tmp_path], include_hidden=True)
+    assert not errors
+    assert len(all_images) == 3
+
+
 def test_discover_deduplicates_overlapping_roots(tmp_path: Path) -> None:
     folder = tmp_path / "photos"
     folder.mkdir()
