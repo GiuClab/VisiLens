@@ -315,6 +315,17 @@ class ImageTile(QFrame):
             self.button.setText("")
 
 
+def application_settings() -> QSettings:
+    """Portable ZIPs keep their own settings alongside the executable."""
+    if getattr(sys, "frozen", False):
+        exe_folder = Path(sys.executable).resolve().parent
+        if (exe_folder / "portable.flag").exists():
+            data = exe_folder / "VisiLensData"
+            data.mkdir(exist_ok=True)
+            return QSettings(str(data / "settings.ini"), QSettings.Format.IniFormat)
+    return QSettings("GiuClab", "VisiLens")
+
+
 class MainWindow(QMainWindow):
     MODES = ("Loose", "Basic", "Strict")
     MODE_COLORS = ("#385ad0", "#1baf71", "#d44747")
@@ -327,7 +338,7 @@ class MainWindow(QMainWindow):
         available = screen.availableGeometry() if screen else QRect(0, 0, 1366, 768)
         self.setMinimumSize(min(1000, max(1, available.width() - 48)),
                             min(580, max(1, available.height() - 64)))
-        self.settings = settings if settings is not None else QSettings("GiuClab", "VisiLens")
+        self.settings = settings if settings is not None else application_settings()
         initial_language = self.settings.value("ui/language", "en", type=str)
         set_language(initial_language if initial_language in LANGUAGES else "en")
         self.apply_theme(self.settings.value("ui/theme", "system", type=str))
