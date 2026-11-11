@@ -27,8 +27,10 @@ jobs:
           python -m pip install ".[dev]" pyinstaller
       - name: Run tests
         run: python -m pytest -q
+      - name: Generate official Windows icon
+        run: python tools/build_icon.py
       - name: Build application
-        run: python -m PyInstaller --noconfirm --clean --windowed --onedir --name VisiLens run_visilens.py
+        run: python -m PyInstaller --noconfirm --clean --windowed --onedir --name VisiLens --icon build/visilens.ico --add-data "src/visilens/assets/icon.png.b64;visilens/assets" run_visilens.py
       - name: Archive Windows package
         shell: pwsh
         run: Compress-Archive -Path dist/VisiLens -DestinationPath VisiLens-Windows.zip
