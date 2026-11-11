@@ -273,7 +273,7 @@ class ImageTile(QFrame):
         self.button.setObjectName("thumb")
         self.button.setFixedSize(130, 110)
         self.button.setToolTip(f"{image.path}\nClicca per vedere l'anteprima")
-        self.button.setText("Anteprima…")
+        self.button.setText(tr("Anteprima…"))
         self.thumbnail_loaded = False
         layout.addWidget(self.button)
         name = lbl(self.fontMetrics().elidedText(image.path.name,
@@ -282,7 +282,7 @@ class ImageTile(QFrame):
         layout.addWidget(name)
         layout.addWidget(lbl(f"{image.width} × {image.height} · {pretty_bytes(image.bytes)}",
                              "muted"))
-        self.checkbox = QCheckBox("Cestino")
+        self.checkbox = QCheckBox(tr("Cestino"))
         layout.addWidget(self.checkbox)
         self.checkbox.toggled.connect(lambda checked: callback(image.path, checked))
 
@@ -731,7 +731,7 @@ class MainWindow(QMainWindow):
             self.folder_list.addItem(str(folder))
 
     def add_folder(self) -> None:
-        chosen = QFileDialog.getExistingDirectory(self, "Seleziona cartella")
+        chosen = QFileDialog.getExistingDirectory(self, tr("Seleziona cartella"))
         if chosen and Path(chosen) not in self.folders:
             self.folders.append(Path(chosen))
             self.refresh_folder_list()
@@ -807,14 +807,14 @@ class MainWindow(QMainWindow):
         self.images = images
         self.image_by_path = {image.path: image for image in images}
         self.refresh_groups()
-        self.status.setText(f"{len(images)} immagini analizzate · "
-                            f"confronto in corso · {len(errors)} errori")
+        self.status.setText(tr("{images} immagini analizzate · confronto in corso · {errors} errori").format(
+            images=len(images), errors=len(errors)))
         if errors:
-            QMessageBox.warning(self, "File ignorati", "\n".join(errors[:10]))
+            QMessageBox.warning(self, tr("File ignorati"), "\n".join(errors[:10]))
 
     @Slot(str)
     def on_error(self, error: str) -> None:
-        QMessageBox.critical(self, "Errore durante la scansione", error)
+        QMessageBox.critical(self, tr("Errore durante la scansione"), error)
         self.status.setText(tr("Scansione non riuscita"))
 
     @Slot()
@@ -840,9 +840,9 @@ class MainWindow(QMainWindow):
             self.apply_groups(self.group_cache[mode])
             return
         if self.group_thread is not None:
-            self.status.setText(f"Attendo il calcolo in corso · prossimo livello: {mode}")
+            self.status.setText(tr("Attendo il calcolo in corso · prossimo livello: {mode}").format(mode=mode))
             return
-        self.status.setText(f"Calcolo duplicati {mode} in background…")
+        self.status.setText(tr("Calcolo duplicati {mode} in background…").format(mode=mode))
         thread = QThread(self)
         worker = GroupWorker(self.images.copy(), mode, self.image_generation)
         self.group_thread = thread
@@ -871,7 +871,7 @@ class MainWindow(QMainWindow):
     def on_group_error(self, generation: int, mode: str, error: str) -> None:
         if generation == self.image_generation:
             self.group_cache[mode] = []
-            self.status.setText(f"Errore confronto {mode}: {error}")
+            self.status.setText(tr("Errore confronto {mode}: {error}").format(mode=mode, error=error))
 
     @Slot()
     def on_group_finished(self) -> None:
@@ -885,7 +885,8 @@ class MainWindow(QMainWindow):
         self.groups = groups
         self.selected_paths.clear()
         self.render_groups()
-        self.status.setText(f"{len(self.images)} immagini · {len(groups)} gruppi ({self.MODES[self.mode_slider.value()]})")
+        self.status.setText(tr("{images} immagini · {groups} gruppi ({mode})").format(
+            images=len(self.images), groups=len(groups), mode=self.MODES[self.mode_slider.value()]))
 
     def render_groups(self) -> None:
         self.render_generation += 1
@@ -927,10 +928,11 @@ class MainWindow(QMainWindow):
             if index == 0:
                 frame, body = box("group")
                 heading = QHBoxLayout()
-                heading.addWidget(lbl(f"Gruppo {number} · {len(group)} immagini", "section"), 1)
+                heading.addWidget(lbl(tr("Gruppo {number} · {count} immagini").format(
+                    number=number, count=len(group)), "section"), 1)
                 selected = lbl("", "muted")
                 count = sum(info.path in self.selected_paths for info in group)
-                selected.setText(f"{count} per il cestino" if count else "")
+                selected.setText(tr("{count} per il cestino").format(count=count) if count else "")
                 heading.addWidget(selected)
                 self.group_labels.append(selected)
                 body.addLayout(heading)
@@ -978,10 +980,10 @@ class MainWindow(QMainWindow):
             tile.set_state(path in self.selected_paths, path == self.preview_path)
         for group, badge in zip(self.groups, self.group_labels):
             count = sum(info.path in self.selected_paths for info in group)
-            badge.setText(f"{count} per il cestino" if count else "")
+            badge.setText(tr("{count} per il cestino").format(count=count) if count else "")
         count = len(self.selected_paths)
-        self.selection_info.setText(f"{count} file selezionati per il cestino" if count != 1
-                                    else "1 file selezionato per il cestino")
+        self.selection_info.setText(tr("{count} file selezionati per il cestino").format(count=count)
+                                    if count != 1 else tr("1 file selezionato per il cestino"))
         if self.preview_path is not None:
             self.update_preview_details()
 
@@ -1008,8 +1010,8 @@ class MainWindow(QMainWindow):
         if info is not None:
             self.preview_details.setText(
                 f"{info.width} × {info.height} · {pretty_bytes(info.bytes)}\n" +
-                ("Selezionata per il cestino" if info.path in self.selected_paths
-                 else "Da conservare"))
+                (tr("Selezionata per il cestino") if info.path in self.selected_paths
+                 else tr("Da conservare")))
 
     def reveal_preview_file(self, _link: str = "") -> None:
         if self.preview_path is None:
@@ -1018,7 +1020,7 @@ class MainWindow(QMainWindow):
             try:
                 subprocess.Popen(["explorer.exe", "/select,", str(self.preview_path)])
             except OSError as exc:
-                QMessageBox.warning(self, "Esplora file", str(exc))
+                QMessageBox.warning(self, tr("Esplora file"), str(exc))
         else:
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.preview_path.parent)))
 
@@ -1035,7 +1037,7 @@ class MainWindow(QMainWindow):
                                                    Qt.AspectRatioMode.KeepAspectRatio))
         image = reader.read()
         if image.isNull():
-            self.big_preview.setText("Anteprima non disponibile")
+            self.big_preview.setText(tr("Anteprima non disponibile"))
             return
         pixmap = QPixmap.fromImage(image)
         self.big_preview.setPixmap(pixmap.scaled(width, height,
@@ -1096,8 +1098,8 @@ class MainWindow(QMainWindow):
         proposal = propose_selection(self.groups, options)
         self.selected_paths = set(proposal.trash_paths)
         self.update_selection_ui()
-        self.status.setText(f"Auto-Select: {len(self.selected_paths)} file selezionati · "
-                            "controlla prima di spostare nel cestino")
+        self.status.setText(tr("Auto-Select: {count} file selezionati · controlla prima di spostare nel cestino").format(
+            count=len(self.selected_paths)))
 
     def configure_auto_select(self) -> None:
         dialog = QDialog(self)
@@ -1123,7 +1125,7 @@ class MainWindow(QMainWindow):
         add = QPushButton(tr("Aggiungi"))
 
         def add_folder() -> None:
-            name = QFileDialog.getExistingDirectory(dialog, "Cartella protetta")
+            name = QFileDialog.getExistingDirectory(dialog, tr("Cartella protetta"))
             if name and Path(name) not in folders:
                 folders.append(Path(name))
                 protected.addItem(name)
@@ -1163,8 +1165,7 @@ class MainWindow(QMainWindow):
                                 "Deve rimanere almeno un'immagine per gruppo.")
             return
         answer = QMessageBox.question(
-            self, "Conferma cestino", f"Spostare {len(targets)} file nel cestino?\n"
-            "Questa operazione non può essere annullata direttamente da VisiLens.",
+            self, tr("Conferma cestino"), tr("Spostare {count} file nel cestino?\nQuesta operazione non può essere annullata direttamente da VisiLens.").format(count=len(targets)),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -1182,9 +1183,10 @@ class MainWindow(QMainWindow):
         self.image_generation += 1
         self.group_cache.clear()
         self.refresh_groups()
-        self.status.setText(f"{len(moved)} file nel cestino · {len(failures)} errori")
+        self.status.setText(tr("{moved} file nel cestino · {errors} errori").format(
+            moved=len(moved), errors=len(failures)))
         if failures:
-            QMessageBox.warning(self, "File non spostati", "\n".join(failures[:10]))
+            QMessageBox.warning(self, tr("File non spostati"), "\n".join(failures[:10]))
 
     def closeEvent(self, event) -> None:
         if self.thread is not None or self.group_thread is not None:
