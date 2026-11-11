@@ -8,6 +8,7 @@ import imagehash
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PySide6.QtCore import QRect, QSettings
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
@@ -114,3 +115,33 @@ def test_clickable_path_reveals_photo_in_windows_explorer(monkeypatch) -> None:
     window.reveal_preview_file()
     assert called == [["explorer.exe", "/select,", str(filename)]]
     window.close()
+
+
+def test_stat_cards_have_three_colored_vector_icons() -> None:
+    app = QApplication.instance() or QApplication([])
+    assert app is not None
+    window = MainWindow()
+    icons = window.findChildren(desktop.StatIcon)
+    assert {icon.kind for icon in icons} == {"photo", "copies", "storage"}
+    assert len({desktop.StatIcon.COLORS[icon.kind][0] for icon in icons}) == 3
+    window.close()
+
+
+def test_first_launch_maximized_and_restored_window_stays_onscreen(tmp_path) -> None:
+    app = QApplication.instance() or QApplication([])
+    settings = QSettings(str(tmp_path / "window.ini"), QSettings.Format.IniFormat)
+    first = MainWindow(settings=settings)
+    first.open_initial_window()
+    app.processEvents()
+    assert first.isMaximized()
+    first.close()
+
+    available = app.primaryScreen().availableGeometry()
+    settings.setValue("window/maximized", False)
+    settings.setValue("window/normal_geometry", QRect(-2000, -2000, 2000, 1400))
+    second = MainWindow(settings=settings)
+    second.open_initial_window()
+    app.processEvents()
+    assert not second.isMaximized()
+    assert available.contains(second.geometry())
+    second.close()
