@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
+import stat
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
@@ -42,18 +44,46 @@ class ImageInfo:
         return self.width * self.height
 
 
-def discover(paths: Iterable[Path]) -> list[Path]:
-    """Find supported files, deduplicating overlapping roots and symlink aliases."""
+def _is_hidden(path: Path) -> bool:
+    """Honor Windows hidden/system attributes as well as Unix dot names."""
+    if path.name.startswith("."):
+        return True
+    try:
+        attributes = getattr(path.stat(), "st_file_attributes", 0)
+    except OSError:
+        return True
+    return bool(attributes & (getattr(stat, "FILE_ATTRIBUTE_HIDDEN", 0)
+                              | getattr(stat, "FILE_ATTRIBUTE_SYSTEM", 0)))
+
+
+def discover(paths: Iterable[Path], include_hidden: bool = False) -> list[Path]:
+    """Find supported files, deduplicating overlapping roots and symlink aliases.
+
+    Hidden directories are pruned before traversal, rather than scanned and filtered later.
+    """
     found: dict[Path, Path] = {}
     for root in paths:
         root = Path(root).expanduser()
-        if root.is_file():
+        root_is_file = root.is_file()
+        if root_is_file:
             candidates = [root]
         elif root.is_dir():
-            candidates = (p for p in root.rglob("*") if p.is_file())
+            candidates = []
+            for parent, directories, filenames in os.walk(root, followlinks=False):
+                directory = Path(parent)
+                if not include_hidden:
+                    directories[:] = [name for name in directories
+                                      if not _is_hidden(directory / name)]
+                for filename in filenames:
+                    path = directory / filename
+                    if path.suffix.lower() in EXTENSIONS and (
+                            include_hidden or not _is_hidden(path)):
+                        candidates.append(path)
         else:
             continue
         for path in candidates:
+            if not include_hidden and root_is_file and _is_hidden(path):
+                continue
             if path.suffix.lower() in EXTENSIONS:
                 try:
                     canonical = path.resolve(strict=True)
@@ -121,8 +151,9 @@ class ScanCache:
 
 def scan(paths: Iterable[Path], progress: Callable[[int, int], None] | None = None,
          cancelled: Callable[[], bool] | None = None,
-         cache_path: Path | None = None) -> tuple[list[ImageInfo], list[str]]:
-    candidates = discover(paths)
+         cache_path: Path | None = None,
+         include_hidden: bool = False) -> tuple[list[ImageInfo], list[str]]:
+    candidates = discover(paths, include_hidden=include_hidden)
     images: list[ImageInfo] = []
     errors: list[str] = []
     cache: ScanCache | None = None
