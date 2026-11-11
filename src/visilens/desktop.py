@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import html
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -10,7 +12,9 @@ from PySide6.QtCore import (
     QDir,
     QFileInfo,
     QObject,
+    QPoint,
     QSettings,
+    QSize,
     QStandardPaths,
     Qt,
     QThread,
@@ -19,7 +23,7 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtGui import QAction, QDesktopServices, QIcon, QPixmap
+from PySide6.QtGui import QAction, QDesktopServices, QIcon, QImageReader, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -56,6 +60,7 @@ QWidget { font-family: 'Segoe UI', Arial; color: #242936; font-size: 12px; }
 QFrame#panel, QFrame#stat, QFrame#group, QFrame#tile {
  background: white; border: 1px solid #dfe3ed; border-radius: 12px; }
 QFrame#tile[active="true"] { border: 2px solid #3d61da; background: #f0f4ff; }
+QFrame#tile[trash="true"] { border: 2px solid #cf353e; background: #fff0f1; }
 QLabel#title { font-size: 18px; font-weight: 750; }
 QLabel#metric { font-size: 25px; font-weight: 750; }
 QLabel#muted { color: #677082; }
@@ -109,9 +114,10 @@ class ScanWorker(QObject):
     failed = Signal(str)
     finished = Signal()
 
-    def __init__(self, folders: list[Path]) -> None:
+    def __init__(self, folders: list[Path], include_hidden: bool = False) -> None:
         super().__init__()
         self.folders = folders
+        self.include_hidden = include_hidden
         self._cancelled = False
 
     def cancel(self) -> None:
@@ -123,11 +129,38 @@ class ScanWorker(QObject):
             base = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / ".cache")))
             cache = base / "VisiLens" / "scan-cache.sqlite3"
             images, errors = scan(self.folders, lambda n, total: self.progress.emit(n, total),
-                                  lambda: self._cancelled, cache_path=cache)
+                                  lambda: self._cancelled, cache_path=cache,
+                                  include_hidden=self.include_hidden)
             self.complete.emit(images, errors)
         except Exception as exc:  # noqa: BLE001 — deliver worker errors to the interface
             self.failed.emit(str(exc))
         finally:
+            self.finished.emit()
+
+
+class GroupWorker(QObject):
+    """Run the existing matching algorithm away from the Qt interface thread."""
+
+    complete = Signal(int, str, object)
+    failed = Signal(str)
+    finished = Signal()
+
+    def __init__(self, images: list[ImageInfo], mode: str, generation: int) -> None:
+        super().__init__()
+        self.images = images
+        self.mode = mode
+        self.generation = generation
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            groups = group_similar(self.images, self.mode)
+            self.images = []
+            self.complete.emit(self.generation, self.mode, groups)
+        except Exception as exc:  # noqa: BLE001
+            self.failed.emit(str(exc))
+        finally:
+            self.images = []
             self.finished.emit()
 
 
@@ -137,6 +170,7 @@ class ImageTile(QFrame):
         self.image = image
         self.setObjectName("tile")
         self.setProperty("active", False)
+        self.setProperty("trash", False)
         self.setFixedWidth(142)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(5, 5, 5, 5)
@@ -145,14 +179,8 @@ class ImageTile(QFrame):
         self.button.setObjectName("thumb")
         self.button.setFixedSize(130, 110)
         self.button.setToolTip(f"{image.path}\nClicca per vedere l'anteprima")
-        pixmap = QPixmap(str(image.path))
-        if not pixmap.isNull():
-            self.button.setIcon(QIcon(pixmap))
-            from PySide6.QtCore import QSize
-
-            self.button.setIconSize(QSize(126, 106))
-        else:
-            self.button.setText("Anteprima non disponibile")
+        self.button.setText("Anteprima…")
+        self.thumbnail_loaded = False
         layout.addWidget(self.button)
         name = lbl(self.fontMetrics().elidedText(image.path.name,
                                                  Qt.TextElideMode.ElideMiddle, 130))
@@ -168,9 +196,29 @@ class ImageTile(QFrame):
         self.checkbox.blockSignals(True)
         self.checkbox.setChecked(checked)
         self.checkbox.blockSignals(False)
-        self.setProperty("active", active)
-        self.style().unpolish(self)
-        self.style().polish(self)
+        if self.property("active") != (active and not checked) or self.property("trash") != checked:
+            self.setProperty("active", active and not checked)
+            self.setProperty("trash", checked)
+            self.style().unpolish(self)
+            self.style().polish(self)
+
+    def load_thumbnail(self) -> None:
+        if self.thumbnail_loaded:
+            return
+        self.thumbnail_loaded = True
+        reader = QImageReader(str(self.image.path))
+        reader.setAutoTransform(True)
+        dimensions = reader.size()
+        if dimensions.isValid():
+            reader.setScaledSize(dimensions.scaled(QSize(126, 106),
+                                                    Qt.AspectRatioMode.KeepAspectRatio))
+        image = reader.read()
+        if image.isNull():
+            self.button.setText("Anteprima non disponibile")
+        else:
+            self.button.setIcon(QIcon(QPixmap.fromImage(image)))
+            self.button.setIconSize(QSize(126, 106))
+            self.button.setText("")
 
 
 class MainWindow(QMainWindow):
@@ -192,6 +240,21 @@ class MainWindow(QMainWindow):
         self.group_labels: list[QLabel] = []
         self.thread: QThread | None = None
         self.worker: ScanWorker | None = None
+        self.group_thread: QThread | None = None
+        self.group_worker: GroupWorker | None = None
+        # Retain Python wrappers until the window closes; Qt deletes the C++
+        # QObjects after their threads finish. Dropping wrappers immediately
+        # during finished signals can race with queued worker events.
+        self._group_jobs: list[tuple[QThread, GroupWorker]] = []
+        self.group_cache: dict[str, list[list[ImageInfo]]] = {}
+        self.image_generation = 0
+        self.render_generation = 0
+        self.render_iterator = None
+        self._render_grid: QGridLayout | None = None
+        self.group_timer = QTimer(self)
+        self.group_timer.setSingleShot(True)
+        self.group_timer.setInterval(180)
+        self.group_timer.timeout.connect(self.request_groups)
         self.preview_path: Path | None = None
         self.image_by_path: dict[Path, ImageInfo] = {}
         self.icon_provider = QFileIconProvider()
@@ -277,6 +340,7 @@ class MainWindow(QMainWindow):
         self.groups_layout.setSpacing(12)
         self.groups_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.groups_scroll.setWidget(self.groups_host)
+        self.groups_scroll.verticalScrollBar().valueChanged.connect(self.load_visible_thumbnails)
         middle.addWidget(self.groups_scroll, 1)
 
         right, right_layout = box()
@@ -293,6 +357,15 @@ class MainWindow(QMainWindow):
         self.preview_name = lbl("Nessuna immagine selezionata", "section")
         self.preview_name.setWordWrap(True)
         right_layout.addWidget(self.preview_name)
+        self.preview_link = QLabel()
+        self.preview_link.setWordWrap(True)
+        self.preview_link.setTextFormat(Qt.TextFormat.RichText)
+        self.preview_link.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextBrowserInteraction)
+        self.preview_link.setOpenExternalLinks(False)
+        self.preview_link.linkActivated.connect(self.reveal_preview_file)
+        self.preview_link.setToolTip("Apri la cartella in Esplora file e seleziona l'immagine")
+        right_layout.addWidget(self.preview_link)
         self.preview_details = lbl("", "muted")
         self.preview_details.setWordWrap(True)
         self.preview_details.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -333,10 +406,17 @@ class MainWindow(QMainWindow):
         english = QAction("English — prossimamente", self)
         english.setEnabled(False)
         language.addAction(english)
+        options_menu = self.menuBar().addMenu("Opzioni")
+        self.hidden_action = QAction("Includi file e cartelle nascosti", self)
+        self.hidden_action.setCheckable(True)
+        self.hidden_action.setChecked(self.settings.value("include_hidden", False, type=bool))
+        self.hidden_action.toggled.connect(
+            lambda checked: self.settings.setValue("include_hidden", checked))
+        options_menu.addAction(self.hidden_action)
         help_menu = self.menuBar().addMenu("Help")
         about = QAction("Informazioni su VisiLens", self)
         about.triggered.connect(lambda: QMessageBox.information(
-            self, "VisiLens", "VisiLens 0.6.1 — anteprima Windows\n"
+            self, "VisiLens", "VisiLens 0.6.2 — anteprima Windows\n"
             "Trova immagini duplicate, controlla le selezioni prima del cestino."))
         help_menu.addAction(about)
         repo = QAction("Progetto su GitHub", self)
@@ -464,6 +544,9 @@ class MainWindow(QMainWindow):
         if not self.folders:
             self.status.setText("Seleziona almeno una cartella.")
             return
+        self.image_generation += 1
+        self.group_cache.clear()
+        self.group_timer.stop()
         self.images, self.groups = [], []
         self.selected_paths.clear()
         self.render_groups()
@@ -472,7 +555,7 @@ class MainWindow(QMainWindow):
         self.cancel_button.setEnabled(True)
         self.status.setText("Scansione in corso…")
         self.thread = QThread(self)
-        self.worker = ScanWorker(self.folders.copy())
+        self.worker = ScanWorker(self.folders.copy(), self.hidden_action.isChecked())
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.progress.connect(self.update_progress)
@@ -496,9 +579,10 @@ class MainWindow(QMainWindow):
     @Slot(object, object)
     def on_complete(self, images: list[ImageInfo], errors: list[str]) -> None:
         self.images = images
+        self.image_by_path = {image.path: image for image in images}
         self.refresh_groups()
         self.status.setText(f"{len(images)} immagini analizzate · "
-                            f"{len(self.groups)} gruppi · {len(errors)} errori")
+                            f"confronto in corso · {len(errors)} errori")
         if errors:
             QMessageBox.warning(self, "File ignorati", "\n".join(errors[:10]))
 
@@ -516,48 +600,143 @@ class MainWindow(QMainWindow):
 
     def refresh_groups(self) -> None:
         self.selected_paths.clear()
-        self.groups = group_similar(self.images, self.MODES[self.mode_slider.value()])
         self.image_by_path = {image.path: image for image in self.images}
+        self.groups = []
         self.render_groups()
+        self.group_timer.start()
+
+    @Slot()
+    def request_groups(self) -> None:
+        if not self.images:
+            return
+        mode = self.MODES[self.mode_slider.value()]
+        if mode in self.group_cache:
+            self.apply_groups(self.group_cache[mode])
+            return
+        if self.group_thread is not None:
+            self.status.setText(f"Attendo il calcolo in corso · prossimo livello: {mode}")
+            return
+        self.status.setText(f"Calcolo duplicati {mode} in background…")
+        thread = QThread(self)
+        worker = GroupWorker(self.images.copy(), mode, self.image_generation)
+        self.group_thread = thread
+        self.group_worker = worker
+        self._group_jobs.append((thread, worker))
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+        worker.complete.connect(self.on_group_complete)
+        worker.failed.connect(lambda error, g=self.image_generation, m=mode:
+                              self.on_group_error(g, m, error))
+        worker.finished.connect(thread.quit)
+        worker.finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+        thread.finished.connect(self.on_group_finished)
+        thread.start()
+
+    @Slot(int, str, object)
+    def on_group_complete(self, generation: int, mode: str,
+                          groups: list[list[ImageInfo]]) -> None:
+        if generation != self.image_generation:
+            return
+        self.group_cache[mode] = groups
+        if mode == self.MODES[self.mode_slider.value()]:
+            self.apply_groups(groups)
+
+    def on_group_error(self, generation: int, mode: str, error: str) -> None:
+        if generation == self.image_generation:
+            self.group_cache[mode] = []
+            self.status.setText(f"Errore confronto {mode}: {error}")
+
+    @Slot()
+    def on_group_finished(self) -> None:
+        self.group_thread = None
+        self.group_worker = None
+        mode = self.MODES[self.mode_slider.value()]
+        if self.images and mode not in self.group_cache:
+            QTimer.singleShot(0, self.request_groups)
+
+    def apply_groups(self, groups: list[list[ImageInfo]]) -> None:
+        self.groups = groups
+        self.selected_paths.clear()
+        self.render_groups()
+        self.status.setText(f"{len(self.images)} immagini · {len(groups)} gruppi ({self.MODES[self.mode_slider.value()]})")
 
     def render_groups(self) -> None:
+        self.render_generation += 1
+        token = self.render_generation
         while self.groups_layout.count():
             item = self.groups_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
         self.tiles.clear()
         self.group_labels.clear()
-        for number, group in enumerate(self.groups, 1):
-            frame, body = box("group")
-            heading = QHBoxLayout()
-            heading.addWidget(lbl(f"Gruppo {number} · {len(group)} immagini", "section"), 1)
-            selected = lbl("", "muted")
-            heading.addWidget(selected)
-            self.group_labels.append(selected)
-            body.addLayout(heading)
-            grid = QGridLayout()
-            grid.setSpacing(8)
-            for index, info in enumerate(group):
-                tile = ImageTile(info, self.thumbnail_toggled)
-                self.tiles[info.path] = tile
-                tile.button.clicked.connect(lambda _checked=False, path=info.path:
-                                            self.show_preview(path))
-                # Two columns keep entire thumbnails visible even at the
-                # minimum supported window width (1180 px).
-                grid.addWidget(tile, index // 2, index % 2,
-                               alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-            body.addLayout(grid)
-            self.groups_layout.addWidget(frame)
+        self.render_iterator = ((number, group, index, info)
+                                for number, group in enumerate(self.groups, 1)
+                                for index, info in enumerate(group))
         self.auto_button.setEnabled(bool(self.groups) and self.mode_slider.value() == 2)
+        self.trash_button.setEnabled(not self.groups)
         self.update_stats()
         self.update_selection_ui()
         if self.groups:
             self.show_preview(self.groups[0][0].path)
+            QTimer.singleShot(0, lambda: self.render_group_batch(token))
         else:
             self.preview_path = None
             self.big_preview.clear()
             self.preview_name.setText("Nessuna immagine selezionata")
+            self.preview_link.clear()
             self.preview_details.setText("")
+
+    def render_group_batch(self, token: int) -> None:
+        if token != self.render_generation:
+            return
+        for _ in range(20):
+            try:
+                number, group, index, info = next(self.render_iterator)
+            except StopIteration:
+                self.render_iterator = None
+                self.trash_button.setEnabled(True)
+                self.load_visible_thumbnails()
+                return
+            if index == 0:
+                frame, body = box("group")
+                heading = QHBoxLayout()
+                heading.addWidget(lbl(f"Gruppo {number} · {len(group)} immagini", "section"), 1)
+                selected = lbl("", "muted")
+                count = sum(info.path in self.selected_paths for info in group)
+                selected.setText(f"{count} per il cestino" if count else "")
+                heading.addWidget(selected)
+                self.group_labels.append(selected)
+                body.addLayout(heading)
+                grid = QGridLayout()
+                grid.setSpacing(8)
+                body.addLayout(grid)
+                self._render_grid = grid
+                self.groups_layout.addWidget(frame)
+            tile = ImageTile(info, self.thumbnail_toggled)
+            self.tiles[info.path] = tile
+            tile.set_state(info.path in self.selected_paths, info.path == self.preview_path)
+            tile.button.clicked.connect(lambda _checked=False, path=info.path:
+                                        self.show_preview(path))
+            self._render_grid.addWidget(tile, index // 2, index % 2,
+                                        alignment=Qt.AlignmentFlag.AlignTop |
+                                        Qt.AlignmentFlag.AlignLeft)
+        QTimer.singleShot(5, lambda: self.render_group_batch(token))
+        QTimer.singleShot(0, self.load_visible_thumbnails)
+
+    def load_visible_thumbnails(self) -> None:
+        viewport = self.groups_scroll.viewport()
+        loaded = 0
+        for tile in self.tiles.values():
+            if tile.thumbnail_loaded:
+                continue
+            y = tile.mapTo(viewport, QPoint(0, 0)).y()
+            if -180 <= y <= viewport.height() + 180:
+                tile.load_thumbnail()
+                loaded += 1
+                if loaded >= 12:
+                    QTimer.singleShot(0, self.load_visible_thumbnails)
+                    break
 
     def thumbnail_toggled(self, path: Path, checked: bool) -> None:
         if checked:
@@ -565,16 +744,20 @@ class MainWindow(QMainWindow):
         else:
             self.selected_paths.discard(path)
         self.update_selection_ui()
+        if self.preview_path == path:
+            self.update_preview_details()
 
     def update_selection_ui(self) -> None:
         for path, tile in self.tiles.items():
             tile.set_state(path in self.selected_paths, path == self.preview_path)
-        for group, badge in zip(self.groups, self.group_labels, strict=True):
+        for group, badge in zip(self.groups, self.group_labels):
             count = sum(info.path in self.selected_paths for info in group)
             badge.setText(f"{count} per il cestino" if count else "")
         count = len(self.selected_paths)
         self.selection_info.setText(f"{count} file selezionati per il cestino" if count != 1
                                     else "1 file selezionato per il cestino")
+        if self.preview_path is not None:
+            self.update_preview_details()
 
     def clear_selection(self) -> None:
         self.selected_paths.clear()
@@ -588,21 +771,47 @@ class MainWindow(QMainWindow):
         self.preview_path = path
         self.update_selection_ui()
         self.preview_name.setText(path.name)
-        self.preview_details.setText(f"{info.width} × {info.height} · {pretty_bytes(info.bytes)}\n"
-                                     f"{path}\n" +
-                                     ("Selezionata per il cestino" if path in self.selected_paths
-                                      else "Da conservare"))
+        self.preview_link.setText(
+            f'<a href="#" style="color:#385ad0;text-decoration:underline;">'
+            f'{html.escape(str(path))}</a>')
+        self.update_preview_details()
         self.update_preview_image()
+
+    def update_preview_details(self) -> None:
+        info = self.image_by_path.get(self.preview_path)
+        if info is not None:
+            self.preview_details.setText(
+                f"{info.width} × {info.height} · {pretty_bytes(info.bytes)}\n" +
+                ("Selezionata per il cestino" if info.path in self.selected_paths
+                 else "Da conservare"))
+
+    def reveal_preview_file(self, _link: str = "") -> None:
+        if self.preview_path is None:
+            return
+        if sys.platform == "win32":
+            try:
+                subprocess.Popen(["explorer.exe", "/select,", str(self.preview_path)])
+            except OSError as exc:
+                QMessageBox.warning(self, "Esplora file", str(exc))
+        else:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.preview_path.parent)))
 
     def update_preview_image(self) -> None:
         if self.preview_path is None:
             return
-        pixmap = QPixmap(str(self.preview_path))
-        if pixmap.isNull():
-            self.big_preview.setText("Anteprima non disponibile")
-            return
         width = max(100, self.big_preview.width() - 16)
         height = max(100, self.big_preview.height() - 16)
+        reader = QImageReader(str(self.preview_path))
+        reader.setAutoTransform(True)
+        dimensions = reader.size()
+        if dimensions.isValid():
+            reader.setScaledSize(dimensions.scaled(QSize(width, height),
+                                                   Qt.AspectRatioMode.KeepAspectRatio))
+        image = reader.read()
+        if image.isNull():
+            self.big_preview.setText("Anteprima non disponibile")
+            return
+        pixmap = QPixmap.fromImage(image)
         self.big_preview.setPixmap(pixmap.scaled(width, height,
                                                   Qt.AspectRatioMode.KeepAspectRatio,
                                                   Qt.TransformationMode.SmoothTransformation))
@@ -610,6 +819,7 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
         QTimer.singleShot(0, self.update_preview_image)
+        QTimer.singleShot(0, self.load_visible_thumbnails)
 
     def update_stats(self) -> None:
         duplicate_count = sum(len(group) - 1 for group in self.groups)
@@ -722,15 +932,17 @@ class MainWindow(QMainWindow):
             except OSError as exc:
                 failures.append(f"{path}: {exc}")
         self.images = [image for image in self.images if image.path not in moved]
+        self.image_generation += 1
+        self.group_cache.clear()
         self.refresh_groups()
         self.status.setText(f"{len(moved)} file nel cestino · {len(failures)} errori")
         if failures:
             QMessageBox.warning(self, "File non spostati", "\n".join(failures[:10]))
 
     def closeEvent(self, event) -> None:
-        if self.thread is not None:
+        if self.thread is not None or self.group_thread is not None:
             QMessageBox.information(self, "Scansione in corso",
-                                    "Interrompi la scansione prima di chiudere.")
+                                    "Attendi il completamento dell'elaborazione prima di chiudere.")
             event.ignore()
         else:
             event.accept()
