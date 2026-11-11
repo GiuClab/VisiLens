@@ -61,6 +61,7 @@ ROWS = {
 "Support me": ("Support me","Unterstütze mich","Soutenez-moi"),
 }
 ROWS.update({
+"Guida all\'utilizzo": ("User guide","Benutzerhandbuch","Guide d\'utilisation"),
 "❤️ Support me": ("❤️ Support me","❤️ Unterstütze mich","❤️ Soutenez-moi"),
 "✦ Auto-Select": ("✦ Auto-Select","✦ Auto-Select","✦ Auto-Select"),
 "Auto-Select": ("Auto-Select","Auto-Select","Auto-Select"),
