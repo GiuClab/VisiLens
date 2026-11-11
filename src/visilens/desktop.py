@@ -43,6 +43,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
     QDialogButtonBox,
+    QComboBox,
     QFileDialog,
     QFileIconProvider,
     QFrame,
@@ -67,6 +68,7 @@ from send2trash import send2trash
 
 from .core import ImageInfo, group_similar, scan
 from .selection import SelectionOptions, propose_selection
+from .i18n import LANGUAGES, get_language, set_language, tr
 
 STYLE = """
 QMainWindow, QWidget#root { background: #f5f6fb; }
@@ -306,13 +308,15 @@ class MainWindow(QMainWindow):
 
     def __init__(self, settings: QSettings | None = None) -> None:
         super().__init__()
-        self.setWindowTitle("VisiLens — Trova le foto duplicate")
+        self.setWindowTitle("VisiLens v0.7.0 — © 2026 GiuClab")
         screen = QApplication.primaryScreen()
         available = screen.availableGeometry() if screen else QRect(0, 0, 1366, 768)
         self.setMinimumSize(min(1000, max(1, available.width() - 48)),
                             min(580, max(1, available.height() - 64)))
-        self.setStyleSheet(STYLE)
         self.settings = settings if settings is not None else QSettings("GiuClab", "VisiLens")
+        initial_language = self.settings.value("ui/language", "en", type=str)
+        set_language(initial_language if initial_language in LANGUAGES else "en")
+        self.apply_theme(self.settings.value("ui/theme", "system", type=str))
         self.folders: list[Path] = []
         self.images: list[ImageInfo] = []
         self.groups: list[list[ImageInfo]] = []
@@ -434,6 +438,7 @@ class MainWindow(QMainWindow):
         self.big_preview.setSizePolicy(QSizePolicy.Policy.Expanding,
                                        QSizePolicy.Policy.Expanding)
         self.big_preview.setStyleSheet("background: #eef1f7; border-radius: 10px;")
+        self.apply_theme(self.settings.value("ui/theme", "system", type=str))
         right_layout.addWidget(self.big_preview, 1)
         self.preview_name = lbl("Nessuna immagine selezionata", "section")
         self.preview_name.setWordWrap(True)
@@ -464,46 +469,158 @@ class MainWindow(QMainWindow):
         bottom.addWidget(self.status, 2)
         outside.addLayout(bottom)
         self.update_stats()
+        self.retranslate_interface()
 
     def create_menus(self) -> None:
         self.menuBar().setNativeMenuBar(False)
-        brand = lbl("◈  VisiLens", "section")
-        brand.setContentsMargins(8, 0, 12, 0)
-        brand.setToolTip("Spazio riservato al logo ufficiale di VisiLens")
-        self.menuBar().setCornerWidget(brand, Qt.Corner.TopRightCorner)
-        file_menu = self.menuBar().addMenu("File")
-        for caption, action in (("Aggiungi cartella…", self.add_folder),
-                                ("Avvia scansione", self.start_scan),
-                                ("Interrompi", self.cancel_scan),
-                                ("Esci", self.close)):
-            entry = QAction(caption, self)
-            entry.triggered.connect(action)
-            file_menu.addAction(entry)
-        language = self.menuBar().addMenu("Language")
-        italian = QAction("Italiano", self)
-        italian.setCheckable(True)
-        italian.setChecked(True)
-        language.addAction(italian)
-        english = QAction("English — prossimamente", self)
-        english.setEnabled(False)
-        language.addAction(english)
-        options_menu = self.menuBar().addMenu("Opzioni")
-        self.hidden_action = QAction("Includi file e cartelle nascosti", self)
+        self.file_menu = self.menuBar().addMenu("File")
+        self.edit_menu = self.menuBar().addMenu("Modifica")
+        self.options_menu = self.menuBar().addMenu("Opzioni")
+        self.help_menu = self.menuBar().addMenu("Aiuto")
+        self._actions = []
+
+        def add(menu, caption, callback, shortcut=None):
+            action = QAction(tr(caption), self)
+            action.setProperty("source_caption", caption)
+            action.triggered.connect(callback)
+            if shortcut:
+                action.setShortcut(shortcut)
+            menu.addAction(action)
+            self._actions.append(action)
+            return action
+
+        add(self.file_menu, "Aggiungi cartella…", self.add_folder, "Ctrl+O")
+        add(self.file_menu, "Avvia scansione", self.start_scan, "Ctrl+R")
+        add(self.file_menu, "Interrompi", self.cancel_scan)
+        self.file_menu.addSeparator()
+        add(self.file_menu, "Esci", self.close)
+
+        add(self.edit_menu, "Auto-Select", self.auto_select)
+        add(self.edit_menu, "Criteri Auto-Select", self.configure_auto_select)
+        add(self.edit_menu, "Annulla selezione", self.clear_selection)
+
+        self.language_menu = self.options_menu.addMenu(tr("Lingua"))
+        self.language_actions = {}
+        for code, title in LANGUAGES.items():
+            action = QAction(title, self)
+            action.setCheckable(True)
+            action.setChecked(code == get_language())
+            action.triggered.connect(lambda checked=False, code=code: self.change_language(code))
+            self.language_menu.addAction(action)
+            self.language_actions[code] = action
+
+        self.theme_menu = self.options_menu.addMenu(tr("Tema"))
+        self.theme_actions = {}
+        for code, title in (("system", "Segui Windows"), ("light", "Chiaro"),
+                            ("dark", "Scuro")):
+            action = add(self.theme_menu, title, lambda checked=False, code=code: self.change_theme(code))
+            action.setCheckable(True)
+            action.setChecked(code == self.settings.value("ui/theme", "system"))
+            self.theme_actions[code] = action
+        self.options_menu.addSeparator()
+        self.hidden_action = add(self.options_menu, "Includi file e cartelle nascosti",
+                                 lambda checked=False: self.settings.setValue("include_hidden", checked))
         self.hidden_action.setCheckable(True)
         self.hidden_action.setChecked(self.settings.value("include_hidden", False, type=bool))
-        self.hidden_action.toggled.connect(
-            lambda checked: self.settings.setValue("include_hidden", checked))
-        options_menu.addAction(self.hidden_action)
-        help_menu = self.menuBar().addMenu("Help")
-        about = QAction("Informazioni su VisiLens", self)
-        about.triggered.connect(lambda: QMessageBox.information(
-            self, "VisiLens", "VisiLens 0.6.4 — anteprima Windows\n"
-            "Trova immagini duplicate, controlla le selezioni prima del cestino."))
-        help_menu.addAction(about)
-        repo = QAction("Progetto su GitHub", self)
-        repo.triggered.connect(lambda: QDesktopServices.openUrl(
+
+        add(self.help_menu, "Informazioni su VisiLens", self.show_about)
+        add(self.help_menu, "Progetto su GitHub", lambda: QDesktopServices.openUrl(
             QUrl("https://github.com/GiuClab/VisiLens")))
-        help_menu.addAction(repo)
+        self.support_button = QPushButton("❤️ Support me")
+        self.support_button.clicked.connect(lambda: QDesktopServices.openUrl(
+            QUrl("https://ko-fi.com/giuclab/tip")))
+        self.menuBar().setCornerWidget(self.support_button, Qt.Corner.TopRightCorner)
+
+    def show_about(self) -> None:
+        QMessageBox.about(
+            self, tr("Informazioni su VisiLens"),
+            "<h2>VisiLens v0.7.0</h2>"
+            "<p>Made with <span style='color:#d44747'>♥</span> by GiuClab</p>"
+            "<p>© 2026 GiuClab · MIT License</p>"
+            "<p><a href='https://github.com/GiuClab/VisiLens'>GitHub</a> · "
+            "<a href='https://ko-fi.com/giuclab/tip'>Ko-fi</a></p>",
+        )
+
+    def change_language(self, code: str) -> None:
+        set_language(code)
+        self.settings.setValue("ui/language", code)
+        for language, action in self.language_actions.items():
+            action.setChecked(language == code)
+        self.retranslate_interface()
+
+    def change_theme(self, value: str) -> None:
+        if value not in ("system", "light", "dark"):
+            return
+        self.settings.setValue("ui/theme", value)
+        self.apply_theme(value)
+        for theme, action in self.theme_actions.items():
+            action.setChecked(theme == value)
+
+    def apply_theme(self, value: str) -> None:
+        if value == "system":
+            value = ("dark" if QApplication.palette().window().color().lightness() < 128
+                     else "light")
+        sheet = STYLE
+        if value == "dark":
+            colors = {"#f5f6fb": "#171c2c", "#242936": "#e8edf8",
+                      "background: white": "background: #252d40",
+                      "#dfe3ed": "#3b455a", "#d6ddec": "#3b455a",
+                      "#e0e4ee": "#3b455a", "#677082": "#b3bdd1",
+                      "#edf2ff": "#334362", "#eef1f7": "#303a50",
+                      "#e1e5f0": "#35415a", "#d4dbea": "#4d5b78",
+                      "#f0f4ff": "#263f6f", "#fff0f1": "#503039",
+                      "#fff5f5": "#503039", "#dbe5ff": "#34486a",
+                      "#2445a1": "#b2c8ff"}
+            for old, new in colors.items():
+                sheet = sheet.replace(old, new)
+        self.setStyleSheet(sheet)
+        if hasattr(self, "big_preview"):
+            self.big_preview.setStyleSheet(
+                "background: #303a50; border-radius: 10px;" if value == "dark"
+                else "background: #eef1f7; border-radius: 10px;")
+
+    def retranslate_interface(self) -> None:
+        """Translate static text while preserving dynamic values and file paths."""
+        for menu, original in ((self.file_menu, "File"), (self.edit_menu, "Modifica"),
+                               (self.options_menu, "Opzioni"), (self.help_menu, "Aiuto"),
+                               (self.language_menu, "Lingua"), (self.theme_menu, "Tema")):
+            menu.setTitle(tr(original))
+        for action in self._actions:
+            action.setText(tr(action.property("source_caption")))
+        for widget in self.findChildren(QWidget):
+            if not isinstance(widget, (QLabel, QPushButton, QCheckBox)):
+                continue
+            source = widget.property("source_caption")
+            if source is None:
+                source = widget.text()
+                if source not in tr.__globals__["ROWS"]:
+                    continue
+                widget.setProperty("source_caption", source)
+            widget.setText(tr(source))
+        self.support_button.setText("❤️ " + tr("Support me"))
+        self.mode_changed(self.mode_slider.value())
+
+    def prompt_language_first_run(self) -> None:
+        if self.settings.value("ui/language_chosen", False, type=bool):
+            return
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Welcome to VisiLens")
+        dialog.setMinimumWidth(400)
+        layout = QVBoxLayout(dialog)
+        message = QLabel("Welcome to VisiLens! Choose your preferred language.")
+        message.setWordWrap(True)
+        layout.addWidget(message)
+        language = QComboBox()
+        for code, name in LANGUAGES.items():
+            language.addItem(name, code)
+        language.setCurrentIndex(list(LANGUAGES).index(get_language()))
+        layout.addWidget(language)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        buttons.accepted.connect(dialog.accept)
+        layout.addWidget(buttons)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self.change_language(language.currentData())
+            self.settings.setValue("ui/language_chosen", True)
 
     def setup_tree(self) -> None:
         self.tree.blockSignals(True)
@@ -1059,13 +1176,13 @@ class MainWindow(QMainWindow):
     def confirm_close(self) -> bool:
         dialog = QMessageBox(self)
         dialog.setIcon(QMessageBox.Icon.Question)
-        dialog.setWindowTitle("Conferma chiusura")
-        dialog.setText("Vuoi davvero chiudere VisiLens?")
+        dialog.setWindowTitle(tr("Conferma chiusura"))
+        dialog.setText(tr("Vuoi davvero chiudere VisiLens?"))
         dialog.setInformativeText(
             "I gruppi trovati e le selezioni correnti non saranno più disponibili "
             "alla prossima apertura. Nessuna immagine verrà eliminata.")
-        close_button = dialog.addButton("Chiudi", QMessageBox.ButtonRole.AcceptRole)
-        cancel_button = dialog.addButton("Annulla", QMessageBox.ButtonRole.RejectRole)
+        close_button = dialog.addButton(tr("Chiudi"), QMessageBox.ButtonRole.AcceptRole)
+        cancel_button = dialog.addButton(tr("Annulla"), QMessageBox.ButtonRole.RejectRole)
         dialog.setDefaultButton(cancel_button)
         dialog.exec()
         return dialog.clickedButton() is close_button
@@ -1076,4 +1193,5 @@ def main() -> None:
     app.setApplicationName("VisiLens")
     window = MainWindow()
     window.open_initial_window()
+    QTimer.singleShot(0, window.prompt_language_first_run)
     sys.exit(app.exec())
