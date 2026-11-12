@@ -13,7 +13,7 @@
 
 <p align="center"><a href="../README.md">🇬🇧 English</a> · <a href="README.it.md">🇮🇹 Italiano</a> · <strong>🇩🇪 Deutsch</strong> · <a href="README.fr.md">🇫🇷 Français</a></p>
 
-<p align="center"><img src="../assets/visilens-demo.svg" alt="VisiLens-Demonstration mit generierten Beispielfotos" width="100%"></p>
+<p align="center"><img src="../assets/visilens-screenshot.png" alt="VisiLens-Demonstration mit generierten Beispielfotos" width="100%"></p>
 <p align="center"><sub>Illustrative Vorschau der VisiLens-Oberfläche mit generierten Beispielfotos. Keine echte Analyse einer privaten Fotosammlung.</sub></p>
 
 ## Über VisiLens
