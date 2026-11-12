@@ -45,6 +45,30 @@ def test_english_default_menu_language_and_support(tmp_path) -> None:
     window.close()
 
 
+
+def test_auto_select_is_explicitly_strict_only(tmp_path) -> None:
+    app = QApplication.instance() or QApplication([])
+    assert app is not None
+    settings = QSettings(str(tmp_path / "strict-only.ini"), QSettings.Format.IniFormat)
+    window = MainWindow(settings=settings)
+    assert "Strict" in window.auto_hint.text()
+    assert "Strict" in window.auto_button.toolTip()
+    assert not window.auto_button.isEnabled()
+    assert not window.auto_action.isEnabled()
+    window.auto_select()
+    assert "Strict" in window.status.text()
+    window.mode_slider.setValue(2)
+    assert not window.auto_button.isEnabled()  # No groups yet
+    window.change_language("it")
+    assert "Strict" in window.auto_hint.text()
+    window.change_language("de")
+    assert "Strict" in window.auto_hint.text()
+    window.change_language("fr")
+    assert "Strict" in window.auto_hint.text()
+    window.close()
+
+
+
 def test_official_icon_loads() -> None:
     app = QApplication.instance() or QApplication([])
     assert app is not None
