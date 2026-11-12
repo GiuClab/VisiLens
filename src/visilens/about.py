@@ -6,7 +6,7 @@ import json
 import re
 
 from PySide6.QtCore import QUrl
-from PySide6.QtGui import QDesktopServices, QFont
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PySide6.QtWidgets import (
     QDialog,
@@ -35,7 +35,8 @@ def version_tuple(version: str) -> tuple[int, ...]:
     match = re.fullmatch(r"v?(\d+(?:\.\d+){1,3})", version.strip())
     if match is None:
         raise ValueError("Invalid release version")
-    return tuple(int(part) for part in match.group(1).split("."))
+    parts = tuple(int(part) for part in match.group(1).split("."))
+    return parts + (0,) * (4 - len(parts))
 
 
 def assess_release(payload: bytes, current: str = __version__) -> tuple[str, str, str]:
