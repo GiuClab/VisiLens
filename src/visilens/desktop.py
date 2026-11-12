@@ -550,14 +550,10 @@ class MainWindow(QMainWindow):
         self.menuBar().addAction(self.support_action)
 
     def show_about(self) -> None:
-        QMessageBox.about(
-            self, tr("Informazioni su VisiLens"),
-            "<h2>VisiLens v0.7.0</h2>"
-            "<p>Made with <span style='color:#d44747'>♥</span> by GiuClab</p>"
-            "<p>© 2026 GiuClab · MIT License</p>"
-            "<p><a href='https://github.com/GiuClab/VisiLens'>GitHub</a> · "
-            "<a href='https://ko-fi.com/giuclab/tip'>Ko-fi</a></p>",
-        )
+        from .about import AboutDialog
+
+        dialog = AboutDialog(self, app_icon())
+        dialog.exec()
 
     def change_language(self, code: str) -> None:
         set_language(code)
