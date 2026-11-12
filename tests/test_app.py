@@ -40,6 +40,8 @@ def test_four_copies_visible_thumbnail_previews_checkbox_selects() -> None:
     window.resize(1180, 720)
     window.show()
     wait_for(app, lambda: len(window.tiles) == 4)
+    assert not window.auto_button.isEnabled()
+    assert not window.auto_action.isEnabled()
     assert len(window.tiles) == 4
     assert len(window.group_labels) == 1
     path = window.groups[0][2].path
@@ -56,6 +58,8 @@ def test_four_copies_visible_thumbnail_previews_checkbox_selects() -> None:
     window.mode_slider.setValue(2)
     assert window.MODES[window.mode_slider.value()] == "Strict"
     wait_for(app, lambda: len(window.tiles) == 4 and window.group_thread is None)
+    assert window.auto_button.isEnabled()
+    assert window.auto_action.isEnabled()
     window.auto_select()
     assert len(window.selected_paths) == 3
     assert sum(tile.checkbox.isChecked() for tile in window.tiles.values()) == 3
