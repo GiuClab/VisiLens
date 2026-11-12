@@ -13,7 +13,7 @@
 
 <p align="center"><a href="../README.md">🇬🇧 English</a> · <strong>🇮🇹 Italiano</strong> · <a href="README.de.md">🇩🇪 Deutsch</a> · <a href="README.fr.md">🇫🇷 Français</a></p>
 
-<p align="center"><img src="../assets/visilens-demo.svg" alt="Interfaccia dimostrativa di VisiLens con immagini create per la presentazione" width="100%"></p>
+<p align="center"><img src="../assets/visilens-screenshot.png" alt="Interfaccia dimostrativa di VisiLens con immagini create per la presentazione" width="100%"></p>
 <p align="center"><sub>Anteprima illustrativa basata sull'interfaccia di VisiLens, con fotografie dimostrative generate. Non rappresenta una scansione reale di fotografie personali.</sub></p>
 
 ## Cos'è VisiLens?
