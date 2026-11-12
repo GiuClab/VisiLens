@@ -1,0 +1,17 @@
+VisiLens - Informazioni prima dell'installazione
+
+VisiLens è un programma gratuito e open source distribuito con licenza MIT.
+
+Cerca immagini visivamente simili nelle cartelle scelte dall'utente. La
+somiglianza non garantisce che i file siano intercambiabili. Controlla ogni
+gruppo e conserva copie di sicurezza delle fotografie importanti.
+
+Auto-Select contrassegna soltanto i file suggeriti. I file vengono spostati
+nel Cestino di Windows solo dopo una tua conferma esplicita.
+
+L'analisi delle immagini e la cache delle impronte avvengono localmente.
+Il pulsante per controllare gli aggiornamenti contatta GitHub solo quando
+lo utilizzi. Il collegamento "Support me" apre Ko-fi nel browser.
+
+La disinstallazione rimuove i file del programma. Le preferenze e la cache
+possono rimanere nel profilo utente, per non perderle in caso di reinstallazione.
