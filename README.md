@@ -32,7 +32,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/visilens-screenshot.png" alt="VisiLens 0.7.0 interface with generated demo photographs in three duplicate groups and a large photo preview" width="50%">
+  <img src="assets/visilens-screenshot.png" alt="VisiLens 0.7.0 screenshot with demonstration photographs" width="100%">
 </p>
 <p align="center"><sub>Illustrative preview based on the VisiLens interface, with generated demonstration photographs. Not an actual scan of a user's photo library.</sub></p>
 
