@@ -1,0 +1,18 @@
+VisiLens - Information before installing
+
+VisiLens is a free and open-source program distributed under the MIT License.
+
+It searches folders you choose for visually similar images. Similarity is not
+proof that files are interchangeable. Please examine every group and keep
+backups of important pictures.
+
+Auto-Select only marks suggested files. Files are sent to the Windows Recycle
+Bin only after you explicitly confirm that action.
+
+Image scanning and fingerprint caching operate locally on your computer.
+The "Check for updates" button contacts GitHub only when you use it.
+The "Support me" link opens Ko-fi in your browser.
+
+The Windows installer removes application files when uninstalled. User
+preferences and image-cache data may remain in your profile. They are not
+automatically deleted so that reinstalling does not unexpectedly lose them.
