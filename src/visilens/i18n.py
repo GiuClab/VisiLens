@@ -297,6 +297,74 @@ ROWS.update({
 ),
 })
 
+ROWS.update({
+    "Versione, progetto e modi per supportare lo sviluppo": (
+        "Version, project links and ways to support development",
+        "Version, Projektlinks und Unterstützung",
+        "Version, liens du projet et moyens de soutenir le développement",
+    ),
+    "Aggiornamenti": (
+        "Updates",
+        "Aktualisierungen",
+        "Mises à jour",
+    ),
+    "Verifica la disponibilità di una nuova release ufficiale.": (
+        "Check for a new official release.",
+        "Prüfen, ob eine neue offizielle Version verfügbar ist.",
+        "Vérifier si une nouvelle version officielle est disponible.",
+    ),
+    "Controlla aggiornamenti": (
+        "Check for updates",
+        "Nach Updates suchen",
+        "Rechercher des mises à jour",
+    ),
+    "Scarica aggiornamento": (
+        "Download update",
+        "Update herunterladen",
+        "Télécharger la mise à jour",
+    ),
+    "Codice sorgente, segnalazioni e contributi.": (
+        "Source code, issues and contributions.",
+        "Quellcode, Fehlermeldungen und Beiträge.",
+        "Code source, signalements et contributions.",
+    ),
+    "Apri GitHub": (
+        "Open GitHub",
+        "GitHub öffnen",
+        "Ouvrir GitHub",
+    ),
+    "Supporta il progetto": (
+        "Support the project",
+        "Projekt unterstützen",
+        "Soutenir le projet",
+    ),
+    "VisiLens è gratuito e open source. Un contributo aiuta a mantenerlo e migliorarlo.": (
+        "VisiLens is free and open source. Your support helps maintain and improve it.",
+        "VisiLens ist kostenlos und quelloffen. Deine Unterstützung hilft bei der Weiterentwicklung.",
+        "VisiLens est gratuit et open source. Votre soutien aide à le maintenir et à l’améliorer.",
+    ),
+    "Controllo aggiornamenti in corso…": (
+        "Checking for updates…",
+        "Suche nach Updates…",
+        "Recherche de mises à jour…",
+    ),
+    "Nuova versione disponibile: {version}": (
+        "New version available: {version}",
+        "Neue Version verfügbar: {version}",
+        "Nouvelle version disponible : {version}",
+    ),
+    "VisiLens è aggiornato.": (
+        "VisiLens is up to date.",
+        "VisiLens ist auf dem neuesten Stand.",
+        "VisiLens est à jour.",
+    ),
+    "Impossibile verificare gli aggiornamenti. Riprova.": (
+        "Could not check for updates. Please try again.",
+        "Updateprüfung fehlgeschlagen. Bitte erneut versuchen.",
+        "Impossible de vérifier les mises à jour. Réessayez.",
+    ),
+})
+
 def set_language(language: str) -> None:
     global _active
     if language not in LANGUAGES:
