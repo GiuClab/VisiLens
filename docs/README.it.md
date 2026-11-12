@@ -28,7 +28,7 @@ Funziona **in locale**: non devi creare un account, abbonarti o caricare le foto
 - 🔍 **Tre livelli:** Loose, Basic e Strict, per regolare la somiglianza.
 - 🗂️ **Gruppi di duplicati:** mostra tutte le copie, con dimensioni e peso dei file.
 - 👁️ **Anteprima grande:** osserva la fotografia prima di prendere una decisione.
-- ✅ **Selezione manuale e Auto-Select:** suggerimenti opzionali per i gruppi Strict, sempre da verificare.
+- ✅ **Selezione manuale e Auto-Select:** **Auto-Select funziona soltanto in modalità Strict**, non con Loose o Basic. Controlla sempre i suggerimenti.
 - 🗑️ **Cestino di Windows:** nessun file viene spostato senza selezione e conferma esplicita.
 - ⚡ **Cache locale:** accelera le scansioni ripetute dei file non modificati.
 - 🌍 **Quattro lingue:** inglese, italiano, tedesco e francese.
