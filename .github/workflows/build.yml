@@ -9,6 +9,8 @@ on:
       - "pyproject.toml"
       - "run_visilens.py"
       - "src/**"
+      - "installer/**"
+      - "LICENSE"
 
 permissions:
   contents: read
@@ -33,6 +35,40 @@ jobs:
         run: python -m PyInstaller --noconfirm --clean --windowed --onedir --name VisiLens --icon build/visilens.ico --add-data "src/visilens/assets/icon.png.b64;visilens/assets" run_visilens.py
       - name: Verify executable has embedded VisiLens icon
         run: python tools/check_windows_icon.py
+      - name: Install Inno Setup compiler
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
+      - name: Create Windows x64 installer
+        shell: pwsh
+        run: |
+          $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
+          $compiler = "${env:ProgramFiles(x86)}\\Inno Setup 6\\ISCC.exe"
+          if (-not (Test-Path $compiler)) { throw "Inno Setup compiler not found: $compiler" }
+          & $compiler "/DMyAppVersion=$version" "installer\\VisiLens.iss"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $setup = "dist\\installer\\VisiLens-Setup-$version-x64.exe"
+          if (-not (Test-Path $setup)) { throw "Installer not produced: $setup" }
+      - name: Smoke test installer and uninstaller
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem "dist\\installer\\VisiLens-Setup-*-x64.exe" | Select-Object -First 1).FullName
+          $destination = Join-Path $env:RUNNER_TEMP "VisiLensInstallerSmoke"
+          $process = Start-Process -FilePath $setup -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/NOICONS", "/DIR=$destination") -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
+          if (-not (Test-Path (Join-Path $destination "VisiLens.exe"))) { throw "Installed EXE missing" }
+          if (-not (Test-Path (Join-Path $destination "_internal"))) { throw "Bundled runtime missing" }
+          if (Test-Path (Join-Path $destination "portable.flag")) { throw "Installed copy must not be portable" }
+          $uninstall = Join-Path $destination "unins000.exe"
+          if (-not (Test-Path $uninstall)) { throw "Uninstaller missing" }
+          $process = Start-Process -FilePath $uninstall -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Uninstaller failed: $($process.ExitCode)" }
+      - name: Upload Windows x64 installer
+        uses: actions/upload-artifact@v6
+        with:
+          name: VisiLens-Installer-0.7.0-x64
+          path: dist/installer/VisiLens-Setup-*-x64.exe
+          if-no-files-found: error
+          retention-days: 30
       - name: Set portable profile
         shell: pwsh
         run: New-Item -ItemType File -Path dist/VisiLens/portable.flag | Out-Null
