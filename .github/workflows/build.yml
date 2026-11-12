@@ -24,13 +24,15 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install ".[dev]" pyinstaller
+          python -m pip install ".[dev]" pyinstaller pefile
       - name: Run tests
         run: python -m pytest -q
       - name: Generate official Windows icon
         run: python tools/build_icon.py
       - name: Build application
         run: python -m PyInstaller --noconfirm --clean --windowed --onedir --name VisiLens --icon build/visilens.ico --add-data "src/visilens/assets/icon.png.b64;visilens/assets" run_visilens.py
+      - name: Verify executable has embedded VisiLens icon
+        run: python tools/check_windows_icon.py
       - name: Set portable profile
         shell: pwsh
         run: New-Item -ItemType File -Path dist/VisiLens/portable.flag | Out-Null
