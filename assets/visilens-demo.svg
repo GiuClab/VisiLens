@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+<title id="title">VisiLens 0.7.0 visual demonstration</title><desc id="desc">Illustrative interface with scanned photo statistics, duplicate groups and landscape preview using generated demo artwork.</desc>
+<defs>
+<linearGradient id="sky" x2=".15" y2="1"><stop stop-color="#1992ef"/><stop offset="1" stop-color="#abdbfa"/></linearGradient>
+<linearGradient id="water" x2="0" y2="1"><stop stop-color="#0c739b"/><stop offset="1" stop-color="#83d4d2"/></linearGradient>
+<linearGradient id="green" x2="0" y2="1"><stop stop-color="#91af63"/><stop offset="1" stop-color="#23573e"/></linearGradient>
+<linearGradient id="town" x2="0" y2="1"><stop stop-color="#a8d6ef"/><stop offset="1" stop-color="#f0d8a2"/></linearGradient>
+<symbol id="lake" viewBox="0 0 600 400">
+<rect x="0" y="0" width="600" height="400" rx="0" fill="url(#sky)" stroke="none" stroke-width="1"/>
+<path d="M0 220 L65 132 L116 171 L201 70 L253 126 L310 93 L364 164 L435 69 L502 151 L562 112 L600 158 L600 265 Z" fill="#45658b"/>
+<path d="M165 121 L201 70 L243 115 L224 109 L213 124 L199 111 L181 136 Z M410 108 L435 69 L473 117 L452 112 L439 125 L424 109 Z M53 149 L65 132 L102 167 L79 158 Z" fill="#fff" opacity=".95"/>
+<path d="M0 231 L65 172 L128 214 L182 158 L234 220 L280 177 L336 232 L408 166 L466 207 L527 179 L600 217 L600 269 L0 269Z" fill="#285b6a"/>
+<path d="M0 244 Q88 214 150 244 T300 244 T450 243 T600 242 L600 400 L0 400Z" fill="url(#water)"/>
+<path d="M0 256 Q88 283 190 264 Q274 248 360 259 T600 255" fill="none" stroke="#c6f7e2" stroke-width="5" opacity=".55"/>
+<path d="M0 303 Q80 315 186 302 T383 304 T600 301 M0 352 Q100 341 206 355 T430 354 T600 350" stroke="#d8f3e6" stroke-width="4" opacity=".37" fill="none"/>
+<path d="M0 246 L15 202 L28 243 L42 193 L56 243 L72 207 L86 245 L102 195 L116 248 L131 204 L147 246 L166 219 L178 243 L199 212 L210 246 L226 228 L239 247 L253 217 L269 248 L290 223 L303 245 L325 215 L339 248 L357 224 L370 248 L392 217 L405 247 L426 225 L444 245 L460 209 L476 245 L493 213 L510 245 L534 218 L548 243 L570 209 L582 242 L600 216 L600 259 L0 259Z" fill="#184b38"/>
+</symbol>
+<symbol id="dog" viewBox="0 0 600 400">
+<rect x="0" y="0" width="600" height="400" rx="0" fill="url(#green)" stroke="none" stroke-width="1"/>
+<circle cx="112" cy="90" r="62" fill="#a3c77a" opacity=".5"/><circle cx="499" cy="300" r="83" fill="#b3d57b" opacity=".5"/>
+<path d="M130 320 Q210 250 300 290 Q404 242 474 331 L484 400 L121 400Z" fill="#d29a54"/>
+<path d="M211 105 Q149 98 150 220 Q148 271 218 290 L270 191Z" fill="#a36b39"/>
+<path d="M392 97 Q467 83 467 214 Q478 274 393 288 L352 177Z" fill="#9f6835"/>
+<ellipse cx="308" cy="204" rx="137" ry="150" fill="#e3b778"/>
+<ellipse cx="307" cy="255" rx="89" ry="71" fill="#f6d6a1"/>
+<ellipse cx="259" cy="205" rx="15" ry="19" fill="#302722"/><ellipse cx="357" cy="205" rx="15" ry="19" fill="#302722"/>
+<ellipse cx="307" cy="262" rx="32" ry="23" fill="#382a24"/><path d="M289 289 Q309 320 330 289" fill="none" stroke="#50372b" stroke-width="7"/>
+<path d="M300 299 Q307 363 338 305" fill="#eb6c72"/>
+</symbol>
+<symbol id="city" viewBox="0 0 600 400">
+<rect x="0" y="0" width="600" height="400" rx="0" fill="url(#town)" stroke="none" stroke-width="1"/>
+<path d="M0 290 L600 290 L600 400 L0 400Z" fill="#b29c7c"/>
+<path d="M30 202 L570 202 L570 295 L30 295Z" fill="#ddba83"/>
+<path d="M130 148 L240 148 L240 291 L130 291 Z M360 148 L470 148 L470 291 L360 291 Z" fill="#d8b280"/>
+<path d="M113 151 L185 109 L257 151 Z M340 151 L415 109 L490 151Z" fill="#8c7c75"/>
+<path d="M259 174 Q300 68 341 174 Z" fill="#6e9b8b"/><rect x="267" y="172" width="66" height="120" fill="#efe3c8"/>
+<rect x="292" y="115" width="16" height="52" fill="#c49d6b"/><path d="M287 115 L300 78 L313 115Z" fill="#718d88"/>
+<g fill="#4e5e5c"><rect x="70" y="225" width="25" height="55"/><rect x="167" y="190" width="30" height="67"/><rect x="400" y="190" width="30" height="67"/><rect x="510" y="225" width="25" height="55"/></g>
+<path d="M0 309 Q150 286 300 318 T600 305 L600 400 L0 400Z" fill="#6dabb7" opacity=".8"/>
+</symbol>
+</defs>
+<rect x="0" y="0" width="1600" height="900" rx="0" fill="#f6f7fc" stroke="none" stroke-width="1"/>
+<rect x="0" y="0" width="1600" height="53" rx="0" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="14" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600" fill="#1c2739" text-anchor="start">▣ VisiLens v0.7.0 — © 2026 GiuClab</text>
+<text x="14" y="43" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#1f2638" text-anchor="start">File   Edit   Options   Help    ❤️ Support me</text>
+<text x="1566" y="19" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="400" fill="#1c2739" text-anchor="end">—   □   ×</text>
+<rect x="10" y="61" width="274" height="786" rx="13" fill="#fff" stroke="#dce4f0" stroke-width="1"/>
+<text x="25" y="91" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#101827" text-anchor="start">Choose folders to scan</text>
+<rect x="24" y="103" width="248" height="412" rx="9" fill="#fff" stroke="#d9e0ed" stroke-width="1"/>
+<text x="33" y="128" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="400" fill="#192335" text-anchor="start">⌄  🖥 This PC</text>
+<text x="53" y="154" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#3c4b65" text-anchor="start">☐   Desktop</text>
+<text x="53" y="183" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#3c4b65" text-anchor="start">☐   Documents</text>
+<rect x="25" y="196" width="246" height="28" rx="0" fill="#dfe8ff" stroke="none" stroke-width="1"/>
+<text x="53" y="212" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#3153b8" text-anchor="start">☑   Download</text>
+<text x="53" y="241" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#3c4b65" text-anchor="start">☑   Pictures</text>
+<text x="53" y="270" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#3c4b65" text-anchor="start">☐   Music</text>
+<text x="53" y="299" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#3c4b65" text-anchor="start">☐   Videos</text>
+<text x="53" y="328" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#3c4b65" text-anchor="start">☐   3D Objects</text>
+<text x="53" y="357" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#3c4b65" text-anchor="start">☐   Local Disk (C:)</text>
+<text x="53" y="386" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#3c4b65" text-anchor="start">☐   Local Disk (D:)</text>
+<text x="24" y="541" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#131b29" text-anchor="start">Selected folders</text>
+<rect x="25" y="552" width="247" height="94" rx="8" fill="#fff" stroke="#d9e1ef" stroke-width="1"/>
+<text x="37" y="577" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#192335" text-anchor="start">D:\Pictures</text>
+<text x="37" y="602" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#192335" text-anchor="start">D:\Download</text>
+<rect x="25" y="659" width="247" height="41" rx="9" fill="#fff" stroke="#cbd8f1" stroke-width="1"/>
+<text x="148" y="685" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="500" fill="#192235" text-anchor="middle">Remove folder</text>
+<text x="24" y="724" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#131b29" text-anchor="start">Similarity level</text>
+<text x="24" y="749" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#71819a" text-anchor="start">Loose — flexible matching</text>
+<rect x="30" y="772" width="244" height="6" rx="3" fill="#d0dbed" stroke="none" stroke-width="1"/>
+<circle cx="36" cy="775" r="10" fill="#385ad0"/>
+<rect x="25" y="800" width="117" height="39" rx="8" fill="#385ad0" stroke="none" stroke-width="1"/>
+<text x="84" y="825" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#fff" text-anchor="middle">▸ Start scan</text>
+<rect x="152" y="800" width="118" height="39" rx="8" fill="#fff" stroke="#cbd8f1" stroke-width="1"/>
+<text x="211" y="825" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="500" fill="#27354b" text-anchor="middle">Stop</text>
+<rect x="300" y="61" width="207" height="94" rx="13" fill="#fff" stroke="#dae2ef" stroke-width="1"/>
+<rect x="313" y="73" width="62" height="68" rx="14" fill="#e4ecff" stroke="none" stroke-width="1"/>
+<text x="344" y="115" font-family="Segoe UI, Arial, sans-serif" font-size="31" font-weight="500" fill="#385ad0" text-anchor="middle">▧</text>
+<text x="387" y="94" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#192335" text-anchor="start">Images scanned</text>
+<text x="387" y="128" font-family="Segoe UI, Arial, sans-serif" font-size="27" font-weight="700" fill="#0f1c33" text-anchor="start">315</text>
+<rect x="517" y="61" width="207" height="94" rx="13" fill="#fff" stroke="#dae2ef" stroke-width="1"/>
+<rect x="530" y="73" width="62" height="68" rx="14" fill="#fff0f1" stroke="none" stroke-width="1"/>
+<text x="561" y="115" font-family="Segoe UI, Arial, sans-serif" font-size="31" font-weight="500" fill="#d63f52" text-anchor="middle">▣</text>
+<text x="604" y="94" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#192335" text-anchor="start">Duplicates found</text>
+<text x="604" y="128" font-family="Segoe UI, Arial, sans-serif" font-size="27" font-weight="700" fill="#0f1c33" text-anchor="start">47</text>
+<rect x="734" y="61" width="207" height="94" rx="13" fill="#fff" stroke="#dae2ef" stroke-width="1"/>
+<rect x="747" y="73" width="62" height="68" rx="14" fill="#e4f5ed" stroke="none" stroke-width="1"/>
+<text x="778" y="115" font-family="Segoe UI, Arial, sans-serif" font-size="31" font-weight="500" fill="#169d65" text-anchor="middle">▤</text>
+<text x="821" y="94" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#192335" text-anchor="start">Recoverable space</text>
+<text x="821" y="128" font-family="Segoe UI, Arial, sans-serif" font-size="27" font-weight="700" fill="#0f1c33" text-anchor="start">106.3 MB</text>
+<rect x="300" y="166" width="212" height="41" rx="9" fill="#385ad0" stroke="none" stroke-width="1"/>
+<text x="406" y="192" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600" fill="#fff" text-anchor="middle">✦  Auto-Select</text>
+<rect x="522" y="166" width="209" height="41" rx="9" fill="#fff" stroke="#ccd8ee" stroke-width="1"/>
+<text x="627" y="192" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="500" fill="#293346" text-anchor="middle">⚙  Criteria</text>
+<rect x="742" y="166" width="210" height="41" rx="9" fill="#fff" stroke="#ccd8ee" stroke-width="1"/>
+<text x="846" y="192" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="500" fill="#293346" text-anchor="middle">Clear selection</text>
+<text x="300" y="231" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#687a96" text-anchor="start">0 files selected for Recycle Bin</text>
+<rect x="297" y="240" width="662" height="640" rx="10" fill="#f2f4f9" stroke="#dce3f0" stroke-width="1"/>
+<rect x="301" y="244" width="636" height="246" rx="12" fill="#fff" stroke="#dee5f0" stroke-width="1"/>
+<text x="317" y="273" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#0f1828" text-anchor="start">Group 1 · 2 images</text>
+<rect x="318" y="285" width="215" height="187" rx="9" fill="#f4f7ff" stroke="#385ad0" stroke-width="2.5"/>
+<svg x="326" y="293" width="199" height="113" viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice"><use href="#lake"/></svg>
+<text x="326" y="422" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#192335" text-anchor="start">mountain-lake-01.jpg</text>
+<text x="326" y="442" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#6d7e97" text-anchor="start">1254 × 1084 · 1.4 MB</text>
+<text x="326" y="461" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#29384c" text-anchor="start">☐ Recycle Bin</text>
+<rect x="620" y="285" width="215" height="187" rx="9" fill="#fff" stroke="#d6deee" stroke-width="1"/>
+<svg x="628" y="293" width="199" height="113" viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice"><use href="#lake"/></svg>
+<text x="628" y="422" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#192335" text-anchor="start">mountain-lake-copy.jpg</text>
+<text x="628" y="442" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#6d7e97" text-anchor="start">1254 × 1084 · 1.4 MB</text>
+<text x="628" y="461" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#29384c" text-anchor="start">☐ Recycle Bin</text>
+<rect x="301" y="502" width="636" height="246" rx="12" fill="#fff" stroke="#dee5f0" stroke-width="1"/>
+<text x="317" y="531" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#0f1828" text-anchor="start">Group 2 · 2 images</text>
+<rect x="318" y="543" width="215" height="187" rx="9" fill="#fff" stroke="#d6deee" stroke-width="1"/>
+<svg x="326" y="551" width="199" height="113" viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice"><use href="#dog"/></svg>
+<text x="326" y="680" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#192335" text-anchor="start">golden-retriever.jpg</text>
+<text x="326" y="700" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#6d7e97" text-anchor="start">1600 × 1100 · 358 KB</text>
+<text x="326" y="719" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#29384c" text-anchor="start">☐ Recycle Bin</text>
+<rect x="620" y="543" width="215" height="187" rx="9" fill="#fff" stroke="#d6deee" stroke-width="1"/>
+<svg x="628" y="551" width="199" height="113" viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice"><use href="#dog"/></svg>
+<text x="628" y="680" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#192335" text-anchor="start">golden-retriever-copy.jpg</text>
+<text x="628" y="700" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#6d7e97" text-anchor="start">1600 × 1100 · 358 KB</text>
+<text x="628" y="719" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#29384c" text-anchor="start">☐ Recycle Bin</text>
+<rect x="301" y="760" width="636" height="116" rx="12" fill="#fff" stroke="#dee5f0" stroke-width="1"/>
+<text x="317" y="787" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#0f1828" text-anchor="start">Group 3 · 2 images</text>
+<svg x="320" y="802" width="196" height="69" viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice"><use href="#city"/></svg>
+<svg x="621" y="802" width="196" height="69" viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice"><use href="#city"/></svg>
+<rect x="940" y="242" width="12" height="637" rx="4" fill="#e9edf5" stroke="none" stroke-width="1"/>
+<rect x="942" y="256" width="8" height="46" rx="4" fill="#c9ced8" stroke="none" stroke-width="1"/>
+<rect x="974" y="61" width="613" height="788" rx="13" fill="#fff" stroke="#dce3f0" stroke-width="1"/>
+<text x="991" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#101b2c" text-anchor="start">Preview</text>
+<rect x="989" y="110" width="583" height="583" rx="13" fill="#eef2f9" stroke="none" stroke-width="1"/>
+<svg x="997" y="131" width="566" height="540" viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice"><use href="#lake"/></svg>
+<text x="991" y="721" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#182134" text-anchor="start">mountain-lake-01.jpg</text>
+<text x="991" y="749" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#385ad0" text-anchor="start">D:\Download\mountain-lake-01.jpg</text>
+<text x="991" y="774" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#7b879a" text-anchor="start">1254 × 1084 · 1.4 MB</text>
+<text x="991" y="796" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="400" fill="#7b879a" text-anchor="start">Keep</text>
+<rect x="991" y="808" width="574" height="36" rx="8" fill="#fff0f1" stroke="#f5c9d0" stroke-width="1"/>
+<text x="1278" y="831" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="500" fill="#c23448" text-anchor="middle">♻  Move selected to Recycle Bin</text>
+<rect x="10" y="858" width="536" height="19" rx="3" fill="#385ad0" stroke="none" stroke-width="1"/>
+<text x="16" y="872" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#fff" text-anchor="start">100%</text>
+<text x="553" y="873" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#63718a" text-anchor="start">315 images · 39 groups (Loose)</text>
+</svg>
