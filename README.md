@@ -48,7 +48,7 @@ Your photos are scanned **locally**. No account, subscription or cloud upload is
 - 🔍 **Three similarity levels.** Choose Loose, Basic or Strict matching.
 - 🗂️ **Visual duplicate groups.** See all matching copies and their dimensions and sizes.
 - 👁️ **Large preview.** Inspect an image before deciding what to do.
-- ✅ **Manual choice and Auto-Select.** Optional suggestions for Strict groups; always review them.
+- ✅ **Manual choice and Auto-Select.** **Auto-Select works in Strict mode only**, never in Loose or Basic. Always review suggestions.
 - 🗑️ **Recycle Bin protection.** Files move only after you select them and explicitly confirm.
 - ⚡ **Local fingerprint cache.** Speed up repeated scans of unchanged photos.
 - 🌍 **Four interface languages.** English, Italian, German and French.
