@@ -1,7 +1,7 @@
 <p align="center"><img src="../assets/visilens-logo.png" alt="Logo officiel VisiLens" width="104"></p>
 <h1 align="center">VisiLens</h1>
 <h3 align="center">Retrouvez les photos similaires. Gardez l'essentiel.</h3>
-<p align="center">Une application gratuite et open source pour rechercher les images en double sur Windows.</p>
+<p align="center">Une application gratuite et open source pour rechercher les images en double sur Windows. Des versions pour macOS et Linux sont prévues ultérieurement.</p>
 
 <p align="center">
   <a href="https://github.com/GiuClab/VisiLens/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/GiuClab/VisiLens/build.yml?branch=main&label=Build%20Windows&labelColor=253148&color=385AD0" alt="État de compilation"></a>
