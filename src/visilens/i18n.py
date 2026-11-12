@@ -340,7 +340,7 @@ ROWS.update({
     ),
     "VisiLens è gratuito e open source. Un contributo aiuta a mantenerlo e migliorarlo.": (
         "VisiLens is free and open source. Your support helps maintain and improve it.",
-        "VisiLens ist kostenlos und quelloffen. Deine Unterstützung hilft bei der Weiterentwicklung.",
+        "VisiLens ist kostenlos und quelloffen. Unterstützung hilft bei der Weiterentwicklung.",
         "VisiLens est gratuit et open source. Votre soutien aide à le maintenir et à l’améliorer.",
     ),
     "Controllo aggiornamenti in corso…": (
