@@ -431,6 +431,7 @@ class MainWindow(QMainWindow):
         actions = QHBoxLayout()
         self.auto_button = QPushButton("✦ Auto-Select")
         self.auto_button.setObjectName("primary")
+        self.auto_button.setToolTip(tr("Auto-Select disponibile solo in modalità Strict"))
         self.auto_button.clicked.connect(self.auto_select)
         self.auto_button.setEnabled(False)
         actions.addWidget(self.auto_button)
@@ -441,6 +442,8 @@ class MainWindow(QMainWindow):
         reset.clicked.connect(self.clear_selection)
         actions.addWidget(reset)
         middle.addLayout(actions)
+        self.auto_hint = lbl(tr("Auto-Select disponibile solo in modalità Strict"), "muted")
+        middle.addWidget(self.auto_hint)
         self.selection_info = lbl("Nessun file selezionato", "muted")
         middle.addWidget(self.selection_info)
         self.groups_scroll = QScrollArea()
@@ -520,7 +523,9 @@ class MainWindow(QMainWindow):
         self.file_menu.addSeparator()
         add(self.file_menu, "Esci", self.close)
 
-        add(self.edit_menu, "Auto-Select", self.auto_select)
+        self.auto_action = add(self.edit_menu, "Auto-Select", self.auto_select)
+        self.auto_action.setEnabled(False)
+        self.auto_action.setToolTip(tr("Auto-Select disponibile solo in modalità Strict"))
         add(self.edit_menu, "Criteri Auto-Select", self.configure_auto_select)
         add(self.edit_menu, "Annulla selezione", self.clear_selection)
 
@@ -582,6 +587,8 @@ class MainWindow(QMainWindow):
                 widget.setProperty("source_caption", source)
             widget.setText(tr(source))
         self.support_action.setText("❤️ " + tr("Support me"))
+        self.auto_button.setToolTip(tr("Auto-Select disponibile solo in modalità Strict"))
+        self.auto_action.setToolTip(tr("Auto-Select disponibile solo in modalità Strict"))
         root = self.tree.topLevelItem(0)
         if root is not None:
             for item in (root, *(root.child(index) for index in range(root.childCount()))):
@@ -871,7 +878,9 @@ class MainWindow(QMainWindow):
         self.render_iterator = ((number, group, index, info)
                                 for number, group in enumerate(self.groups, 1)
                                 for index, info in enumerate(group))
-        self.auto_button.setEnabled(bool(self.groups) and self.mode_slider.value() == 2)
+        auto_enabled = bool(self.groups) and self.mode_slider.value() == 2
+        self.auto_button.setEnabled(auto_enabled)
+        self.auto_action.setEnabled(auto_enabled)
         self.trash_button.setEnabled(not self.groups)
         self.update_stats()
         self.update_selection_ui()
@@ -1071,7 +1080,11 @@ class MainWindow(QMainWindow):
             self.show()
 
     def auto_select(self) -> None:
-        if self.mode_slider.value() != 2 or not self.groups:
+        if self.mode_slider.value() != 2:
+            self.status.setText(tr(
+                "Auto-Select richiede Strict: modifica il livello di somiglianza."))
+            return
+        if not self.groups:
             return
         saved_folders = self.settings.value("protected_folders", [], type=list)
         options = SelectionOptions(
