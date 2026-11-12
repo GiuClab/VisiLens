@@ -218,7 +218,15 @@ class AboutDialog(QDialog):
         try:
             if reply.error() != QNetworkReply.NetworkError.NoError:
                 raise ValueError(reply.errorString())
-            if reply.attribute(QNetworkRequest.Attribute.HttpStatusCodeAttribute) != 200:
+            http_status = reply.attribute(
+                QNetworkRequest.Attribute.HttpStatusCodeAttribute
+            )
+            if http_status == 404:
+                self.set_status(
+                    tr("Non sono ancora state pubblicate release ufficiali su GitHub."), BLUE
+                )
+                return
+            if http_status != 200:
                 raise ValueError("GitHub did not return a stable release")
             state, latest, url = assess_release(bytes(reply.readAll()))
             if state == "available":
