@@ -28,7 +28,7 @@ L'analyse des images s'effectue **sur votre ordinateur**. Aucun compte, abonneme
 - 🔍 **Trois niveaux de comparaison :** Loose, Basic et Strict.
 - 🗂️ **Groupes de doublons :** voir toutes les copies avec leurs dimensions et tailles.
 - 👁️ **Grand aperçu :** examiner les images avant de décider.
-- ✅ **Sélection manuelle et Auto-Select :** suggestions facultatives en mode Strict, toujours à vérifier.
+- ✅ **Sélection manuelle et Auto-Select :** **Auto-Select fonctionne uniquement en mode Strict**, jamais en Loose ou Basic. Vérifiez les suggestions.
 - 🗑️ **Corbeille Windows :** les fichiers ne sont déplacés qu'après sélection et confirmation.
 - ⚡ **Cache local :** accélérer les analyses suivantes des fichiers inchangés.
 - 🌍 **Quatre langues :** anglais, italien, allemand et français.
