@@ -6,7 +6,8 @@
 <h3 align="center">Find visually similar photos. Keep what matters.</h3>
 
 <p align="center">
-  A free, open-source duplicate photo finder for Windows.<br>
+  A free, open-source duplicate photo finder for Windows 10/11.<br>
+  macOS and Linux versions are planned for a future release.<br>
   Review similar images side by side and choose what to keep.
 </p>
 
