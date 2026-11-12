@@ -1,0 +1,18 @@
+VisiLens - Hinweise vor der Installation
+
+VisiLens ist kostenlos und quelloffen und wird unter der MIT-Lizenz angeboten.
+
+Das Programm sucht in den ausgewählten Ordnern nach visuell ähnlichen Bildern.
+Ähnlichkeit bedeutet nicht, dass Dateien austauschbar sind. Bitte alle Gruppen
+prüfen und wichtige Bilder vorher sichern.
+
+Auto-Select markiert nur vorgeschlagene Dateien. Dateien werden erst nach
+ausdrücklicher Bestätigung in den Windows-Papierkorb verschoben.
+
+Die Bildanalyse und der Fingerabdruck-Cache erfolgen lokal auf dem Rechner.
+Die Updateprüfung verbindet sich nur auf Knopfdruck mit GitHub.
+Der Link "Support me" öffnet Ko-fi im Browser.
+
+Die Deinstallation entfernt Programmdateien. Einstellungen und Cache können
+im Benutzerprofil erhalten bleiben, damit eine Neuinstallation sie nicht
+ungewollt löscht.
