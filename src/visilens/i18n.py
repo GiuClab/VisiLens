@@ -117,6 +117,14 @@ ROWS = {
 "Support me": ("Support me","Unterstütze mich","Soutenez-moi"),
 }
 ROWS.update({
+    "Non sono ancora state pubblicate release ufficiali su GitHub.": (
+        "No official GitHub releases have been published yet.",
+        "Es wurden noch keine offiziellen GitHub-Releases veröffentlicht.",
+        "Aucune version officielle n'a encore été publiée sur GitHub.",
+    ),
+})
+
+ROWS.update({
     "Auto-Select disponibile solo in modalità Strict": (
         "Auto-Select works in Strict mode only",
         "Auto-Select funktioniert nur im Strict-Modus",
