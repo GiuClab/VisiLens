@@ -23,7 +23,7 @@ def test_translation_catalog() -> None:
     assert tr("Opzioni") == "Opzioni"
 
 
-def test_english_default_menu_language_and_theme(tmp_path) -> None:
+def test_english_default_menu_language_and_support(tmp_path) -> None:
     app = QApplication.instance() or QApplication([])
     assert app is not None
     settings = QSettings(str(tmp_path / "new-user.ini"), QSettings.Format.IniFormat)
@@ -33,17 +33,15 @@ def test_english_default_menu_language_and_theme(tmp_path) -> None:
     assert window.edit_menu.title() == "Edit"
     assert window.options_menu.title() == "Options"
     assert window.language_actions["en"].isChecked()
-    assert "ko-fi.com/giuclab/tip" in window.support_button.toolTip() or (
-        "Support me" in window.support_button.text()
-    )
+    assert window.menuBar().actions()[-1] is window.support_action
+    assert "Support me" in window.support_action.text()
+    assert not hasattr(window, "theme_menu")
     window.change_language("de")
     assert window.options_menu.title() == "Optionen"
     assert settings.value("ui/language") == "de"
-    window.change_theme("dark")
-    assert settings.value("ui/theme") == "dark"
-    assert "#171c2c" in window.styleSheet()
-    window.change_theme("light")
     assert "#f5f6fb" in window.styleSheet()
+    window.change_language("en")
+    assert "Support me" in window.support_action.text()
     window.close()
 
 
