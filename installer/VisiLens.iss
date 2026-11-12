@@ -23,6 +23,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 WizardStyle=modern
 WizardSizePercent=110
+WizardSmallImageFile=..\build\visilens-icon.png
 SetupIconFile=..\build\visilens.ico
 UninstallDisplayIcon={app}\VisiLens.exe
 LicenseFile=..\LICENSE
@@ -33,7 +34,8 @@ SolidCompression=yes
 CloseApplications=yes
 RestartApplications=no
 ShowLanguageDialog=yes
-UsePreviousLanguage=yes
+LanguageDetectionMethod=none
+UsePreviousLanguage=no
 VersionInfoProductName=VisiLens
 VersionInfoProductVersion={#MyAppVersion}
 VersionInfoDescription=VisiLens Windows Setup
@@ -41,10 +43,10 @@ VersionInfoCompany=GiuClab
 VersionInfoCopyright=Copyright (c) 2026 GiuClab and VisiLens contributors
 
 [Languages]
-Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
-Name: "german"; MessagesFile: "compiler:Languages\German.isl"
-Name: "french"; MessagesFile: "compiler:Languages\French.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl"; InfoBeforeFile: "NOTES-en.txt"
+Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"; InfoBeforeFile: "NOTES-it.txt"
+Name: "german"; MessagesFile: "compiler:Languages\German.isl"; InfoBeforeFile: "NOTES-de.txt"
+Name: "french"; MessagesFile: "compiler:Languages\French.isl"; InfoBeforeFile: "NOTES-fr.txt"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -53,6 +55,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; The installer does not contain portable.flag or a user's portable settings.
 ; Preserve PyInstaller's _internal directory and all its runtime dependencies.
 Source: "..\dist\VisiLens\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "portable.flag,VisiLensData\*,VisiLensData"
+Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\VisiLens"; Filename: "{app}\VisiLens.exe"; IconFilename: "{app}\VisiLens.exe"
