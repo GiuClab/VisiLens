@@ -31,7 +31,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/visilens-demo.webp" alt="VisiLens 0.7.0 interface with generated demo photographs in three duplicate groups and a large photo preview" width="100%">
+  <img src="assets/visilens-demo.svg" alt="VisiLens 0.7.0 interface with generated demo photographs in three duplicate groups and a large photo preview" width="100%">
 </p>
 <p align="center"><sub>Illustrative preview based on the VisiLens interface, with generated demonstration photographs. Not an actual scan of a user's photo library.</sub></p>
 
