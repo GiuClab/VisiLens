@@ -11,6 +11,11 @@ Inspired by the workflow of VisiPics; not affiliated with its authors.
 - Four languages (English default, Italian, German and French), with language selection on first launch.
 - Light-only interface for now; dark mode is planned for a later release.
 - A Ko-fi **Support me** menu item immediately after Help.
+- An expanded **About VisiLens** dialog with a manual, asynchronous GitHub Releases
+  update check. The check uses the latest published stable release; no updates
+  are installed automatically. GitHub Actions test artifacts are not releases.
+- Gallery tiles reserve their full layout immediately; visible thumbnails are
+  decoded on worker threads and inserted without blocking the interface.
 - The Windows installer and macOS/Linux builds are planned for future releases.
 
 ## Features
