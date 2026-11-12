@@ -443,6 +443,8 @@ class MainWindow(QMainWindow):
         actions.addWidget(reset)
         middle.addLayout(actions)
         self.auto_hint = lbl(tr("Auto-Select disponibile solo in modalità Strict"), "muted")
+        self.auto_hint.setProperty("source_caption",
+                                   "Auto-Select disponibile solo in modalità Strict")
         middle.addWidget(self.auto_hint)
         self.selection_info = lbl("Nessun file selezionato", "muted")
         middle.addWidget(self.selection_info)
