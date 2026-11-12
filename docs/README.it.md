@@ -1,7 +1,7 @@
 <p align="center"><img src="../assets/visilens-logo.png" alt="Logo ufficiale VisiLens" width="104"></p>
 <h1 align="center">VisiLens</h1>
 <h3 align="center">Trova le foto simili. Conserva ciò che conta.</h3>
-<p align="center">Un programma gratuito e open source per trovare immagini duplicate su Windows.</p>
+<p align="center">Un programma gratuito e open source per trovare immagini duplicate su Windows. Le versioni macOS e Linux sono previste in futuro.</p>
 
 <p align="center">
   <a href="https://github.com/GiuClab/VisiLens/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/GiuClab/VisiLens/build.yml?branch=main&label=Build%20Windows&labelColor=253148&color=385AD0" alt="Stato compilazione"></a>
