@@ -341,7 +341,7 @@ class MainWindow(QMainWindow):
         self.settings = settings if settings is not None else application_settings()
         initial_language = self.settings.value("ui/language", "en", type=str)
         set_language(initial_language if initial_language in LANGUAGES else "en")
-        self.apply_theme(self.settings.value("ui/theme", "system", type=str))
+        self.setStyleSheet(STYLE)
         self.folders: list[Path] = []
         self.images: list[ImageInfo] = []
         self.groups: list[list[ImageInfo]] = []
@@ -463,7 +463,6 @@ class MainWindow(QMainWindow):
         self.big_preview.setSizePolicy(QSizePolicy.Policy.Expanding,
                                        QSizePolicy.Policy.Expanding)
         self.big_preview.setStyleSheet("background: #eef1f7; border-radius: 10px;")
-        self.apply_theme(self.settings.value("ui/theme", "system", type=str))
         right_layout.addWidget(self.big_preview, 1)
         self.preview_name = lbl("Nessuna immagine selezionata", "section")
         self.preview_name.setWordWrap(True)
@@ -534,14 +533,6 @@ class MainWindow(QMainWindow):
             self.language_menu.addAction(action)
             self.language_actions[code] = action
 
-        self.theme_menu = self.options_menu.addMenu(tr("Tema"))
-        self.theme_actions = {}
-        for code, title in (("system", "Segui Windows"), ("light", "Chiaro"),
-                            ("dark", "Scuro")):
-            action = add(self.theme_menu, title, lambda checked=False, code=code: self.change_theme(code))  # noqa: E501
-            action.setCheckable(True)
-            action.setChecked(code == self.settings.value("ui/theme", "system"))
-            self.theme_actions[code] = action
         self.options_menu.addSeparator()
         self.hidden_action = add(self.options_menu, "Includi file e cartelle nascosti",
                                  lambda checked=False: self.settings.setValue("include_hidden", checked))  # noqa: E501
@@ -553,10 +544,10 @@ class MainWindow(QMainWindow):
         add(self.help_menu, "Informazioni su VisiLens", self.show_about)
         add(self.help_menu, "Progetto su GitHub", lambda: QDesktopServices.openUrl(
             QUrl("https://github.com/GiuClab/VisiLens")))
-        self.support_button = QPushButton("❤️ Support me")
-        self.support_button.clicked.connect(lambda: QDesktopServices.openUrl(
+        self.support_action = QAction("❤️ " + tr("Support me"), self)
+        self.support_action.triggered.connect(lambda: QDesktopServices.openUrl(
             QUrl("https://ko-fi.com/giuclab/tip")))
-        self.menuBar().setCornerWidget(self.support_button, Qt.Corner.TopRightCorner)
+        self.menuBar().addAction(self.support_action)
 
     def show_about(self) -> None:
         QMessageBox.about(
@@ -575,42 +566,11 @@ class MainWindow(QMainWindow):
             action.setChecked(language == code)
         self.retranslate_interface()
 
-    def change_theme(self, value: str) -> None:
-        if value not in ("system", "light", "dark"):
-            return
-        self.settings.setValue("ui/theme", value)
-        self.apply_theme(value)
-        for theme, action in self.theme_actions.items():
-            action.setChecked(theme == value)
-
-    def apply_theme(self, value: str) -> None:
-        if value == "system":
-            value = ("dark" if QApplication.palette().window().color().lightness() < 128
-                     else "light")
-        sheet = STYLE
-        if value == "dark":
-            colors = {"#f5f6fb": "#171c2c", "#242936": "#e8edf8",
-                      "background: white": "background: #252d40",
-                      "#dfe3ed": "#3b455a", "#d6ddec": "#3b455a",
-                      "#e0e4ee": "#3b455a", "#677082": "#b3bdd1",
-                      "#edf2ff": "#334362", "#eef1f7": "#303a50",
-                      "#e1e5f0": "#35415a", "#d4dbea": "#4d5b78",
-                      "#f0f4ff": "#263f6f", "#fff0f1": "#503039",
-                      "#fff5f5": "#503039", "#dbe5ff": "#34486a",
-                      "#2445a1": "#b2c8ff"}
-            for old, new in colors.items():
-                sheet = sheet.replace(old, new)
-        self.setStyleSheet(sheet)
-        if hasattr(self, "big_preview"):
-            self.big_preview.setStyleSheet(
-                "background: #303a50; border-radius: 10px;" if value == "dark"
-                else "background: #eef1f7; border-radius: 10px;")
-
     def retranslate_interface(self) -> None:
         """Translate static text while preserving dynamic values and file paths."""
         for menu, original in ((self.file_menu, "File"), (self.edit_menu, "Modifica"),
                                (self.options_menu, "Opzioni"), (self.help_menu, "Aiuto"),
-                               (self.language_menu, "Lingua"), (self.theme_menu, "Tema")):
+                               (self.language_menu, "Lingua")):
             menu.setTitle(tr(original))
         for action in self._actions:
             action.setText(tr(action.property("source_caption")))
@@ -624,7 +584,7 @@ class MainWindow(QMainWindow):
                     continue
                 widget.setProperty("source_caption", source)
             widget.setText(tr(source))
-        self.support_button.setText("❤️ " + tr("Support me"))
+        self.support_action.setText("❤️ " + tr("Support me"))
         root = self.tree.topLevelItem(0)
         if root is not None:
             for item in (root, *(root.child(index) for index in range(root.childCount()))):
