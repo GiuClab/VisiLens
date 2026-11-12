@@ -23,6 +23,7 @@ from PySide6.QtCore import (
     QStandardPaths,
     Qt,
     QThread,
+    QThreadPool,
     QTimer,
     QUrl,
     Signal,
@@ -32,6 +33,7 @@ from PySide6.QtGui import (
     QAction,
     QColor,
     QDesktopServices,
+    QImage,
     QIcon,
     QImageReader,
     QPainter,
@@ -70,6 +72,7 @@ from send2trash import send2trash
 from .core import ImageInfo, group_similar, scan
 from .selection import SelectionOptions, propose_selection
 from .i18n import LANGUAGES, ROWS, get_language, set_language, tr
+from .thumbnails import ThumbnailEvents, ThumbnailTask
 
 STYLE = """
 QMainWindow, QWidget#root { background: #f5f6fb; }
@@ -265,7 +268,8 @@ class ImageTile(QFrame):
         self.setObjectName("tile")
         self.setProperty("active", False)
         self.setProperty("trash", False)
-        self.setFixedWidth(142)
+        # Fixed geometry prevents text and checkboxes overlapping during batch loading.
+        self.setFixedSize(142, 198)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(4)
@@ -296,23 +300,14 @@ class ImageTile(QFrame):
             self.style().unpolish(self)
             self.style().polish(self)
 
-    def load_thumbnail(self) -> None:
-        if self.thumbnail_loaded:
-            return
-        self.thumbnail_loaded = True
-        reader = QImageReader(str(self.image.path))
-        reader.setAutoTransform(True)
-        dimensions = reader.size()
-        if dimensions.isValid():
-            reader.setScaledSize(dimensions.scaled(QSize(126, 106),
-                                                    Qt.AspectRatioMode.KeepAspectRatio))
-        image = reader.read()
+    def set_thumbnail(self, image) -> None:
+        """Apply a decoded image in the GUI thread, preserving the tile's geometry."""
         if image.isNull():
             self.button.setText(tr("Anteprima non disponibile"))
-        else:
-            self.button.setIcon(QIcon(QPixmap.fromImage(image)))
-            self.button.setIconSize(QSize(126, 106))
-            self.button.setText("")
+            return
+        self.button.setIcon(QIcon(QPixmap.fromImage(image)))
+        self.button.setIconSize(QSize(126, 106))
+        self.button.setText("")
 
 
 def application_settings() -> QSettings:
@@ -359,6 +354,12 @@ class MainWindow(QMainWindow):
         self.group_cache: dict[str, list[list[ImageInfo]]] = {}
         self.image_generation = 0
         self.render_generation = 0
+        self.thumbnail_generation = 0
+        self.thumbnail_events = ThumbnailEvents(self)
+        self.thumbnail_events.loaded.connect(self.on_thumbnail_ready)
+        self.thumbnail_pool = QThreadPool(self)
+        self.thumbnail_pool.setMaxThreadCount(3)
+        self.thumbnail_inflight = 0
         self.render_iterator = None
         self._render_grid: QGridLayout | None = None
         self.group_timer = QTimer(self)
@@ -858,6 +859,7 @@ class MainWindow(QMainWindow):
             images=len(self.images), groups=len(groups), mode=self.MODES[self.mode_slider.value()]))
 
     def render_groups(self) -> None:
+        self.thumbnail_generation += 1
         self.render_generation += 1
         token = self.render_generation
         while self.groups_layout.count():
@@ -922,18 +924,31 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(0, self.load_visible_thumbnails)
 
     def load_visible_thumbnails(self) -> None:
+        """Queue only visible thumbnails; decoding does not block Qt painting."""
+        if self.render_iterator is not None or self.thumbnail_inflight >= 8:
+            return
         viewport = self.groups_scroll.viewport()
-        loaded = 0
-        for tile in self.tiles.values():
+        generation = self.thumbnail_generation
+        for tile in tuple(self.tiles.values()):
             if tile.thumbnail_loaded:
                 continue
             y = tile.mapTo(viewport, QPoint(0, 0)).y()
             if -180 <= y <= viewport.height() + 180:
-                tile.load_thumbnail()
-                loaded += 1
-                if loaded >= 12:
-                    QTimer.singleShot(0, self.load_visible_thumbnails)
+                tile.thumbnail_loaded = True
+                self.thumbnail_inflight += 1
+                task = ThumbnailTask(str(tile.image.path), generation, self.thumbnail_events)
+                self.thumbnail_pool.start(task)
+                if self.thumbnail_inflight >= 8:
                     break
+
+    @Slot(str, int, QImage)
+    def on_thumbnail_ready(self, path: str, generation: int, image: QImage) -> None:
+        self.thumbnail_inflight = max(0, self.thumbnail_inflight - 1)
+        if generation == self.thumbnail_generation:
+            tile = self.tiles.get(Path(path))
+            if tile is not None:
+                tile.set_thumbnail(image)
+        QTimer.singleShot(0, self.load_visible_thumbnails)
 
     def thumbnail_toggled(self, path: Path, checked: bool) -> None:
         if checked:
