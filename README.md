@@ -9,7 +9,8 @@ Inspired by the workflow of VisiPics; not affiliated with its authors.
 
 - Menu organized as File, Edit, Options and Help.
 - Four languages (English default, Italian, German and French), with language selection on first launch.
-- Light/dark/system theme selection and a direct Ko-fi support link.
+- Light-only interface for now; dark mode is planned for a later release.
+- A Ko-fi **Support me** menu item immediately after Help.
 - The Windows installer and macOS/Linux builds are planned for future releases.
 
 ## Features
@@ -24,7 +25,8 @@ Inspired by the workflow of VisiPics; not affiliated with its authors.
   leaves the current groups and Trash selections untouched. With no groups, close
   normally. No images are deleted on exit.
 - Cancel scanning; skip and report damaged/unreadable files.
-- Three-pane Italian-language interface: Windows-style folder tree on the left,
+- Three-pane interface with English as the default and Italian, German and French options:
+  Windows-style folder tree on the left,
   duplicate groups and scan statistics in the center, large preview and file
   details on the right.
 - First launch maximizes the window within the desktop work area; later launches
@@ -45,7 +47,8 @@ Inspired by the workflow of VisiPics; not affiliated with its authors.
 - The folder tree includes Windows user locations (Desktop, Documents,
   Downloads, Pictures, Music and Video) with native file icons, plus the disks.
 - Similarity slider runs from Loose (blue), through Basic (green), to Strict (red).
-- File, Language, Opzioni and Help menus (Italian available; English planned).
+- File, Edit, Options and Help menus, followed by **❤️ Support me** linking to
+  https://ko-fi.com/giuclab/tip. Language selection is under Options.
 - **Opzioni → Includi file e cartelle nascosti**: opt-in traversal of hidden
   files and folders, saved between launches; Windows hidden/system attributes
   and dot-prefixed names are excluded by default.
@@ -73,6 +76,17 @@ visilens
 ```
 
 If `visilens` is not on your PATH, run `python -m visilens.app`.
+
+### Windows portable ZIP
+
+Download the **VisiLens-Portable-0.7.0-x64.zip** artifact from GitHub Actions,
+extract it **once** into a folder of your choice, then run `VisiLens.exe`.
+Keep the `_internal` folder and `portable.flag` next to the executable.
+The `VisiLensData` folder is created automatically to store portable settings.
+On first launch, choose a language (English is selected by default).
+
+The Windows installer is planned for a future release. Dark mode is also
+postponed until it has been designed and tested properly.
 
 ## Usage
 
