@@ -110,7 +110,8 @@ class AboutDialog(QDialog):
         product.setObjectName("aboutTitle")
         info.addWidget(product)
         info.addWidget(QLabel("© 2026 GiuClab · MIT License"))
-        info.addWidget(QLabel("Made with ♥ by GiuClab"))
+        signature = QLabel("Made with <span style='color:#d44747'>♥</span> by GiuClab")
+        info.addWidget(signature)
         hero_row.addLayout(info, 1)
         root.addWidget(hero)
 
