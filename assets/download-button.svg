@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 86" role="img" aria-labelledby="title desc">
+<title id="title">Download VisiLens for Windows</title>
+<desc id="desc">Free Windows download. Installer and portable ZIP.</desc>
+<defs><linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#446ce4"/><stop offset="1" stop-color="#2847b8"/></linearGradient></defs>
+<rect x="1" y="1" width="338" height="84" rx="14" fill="url(#blue)" stroke="#9caef5" stroke-width="1.4"/>
+<g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
+  <path d="M38 21 V49 M28 40 L38 50 L48 40"/>
+  <path d="M24 52 V60 Q24 63 28 63 H48 Q52 63 52 59 V52"/>
+</g>
+<text x="75" y="39" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#fff">Download VisiLens</text>
+<text x="77" y="62" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#e9efff">Windows 10/11 · Free · 64-bit</text>
+</svg>
