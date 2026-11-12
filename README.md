@@ -18,9 +18,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GiuClab/VisiLens/actions/workflows/build.yml"><strong>⬇️ Download for Windows</strong></a>
-  &nbsp;·&nbsp;
-  <a href="https://ko-fi.com/giuclab/tip">❤️ Support VisiLens</a>
+  <a href="https://github.com/GiuClab/VisiLens/actions/workflows/build.yml"><img src="assets/download-button.svg" alt="Download VisiLens for Windows - installer and portable" width="270"></a>
+  <br>
+  <a href="https://ko-fi.com/giuclab/tip">❤️ Support VisiLens on Ko-fi</a>
 </p>
 
 <p align="center">
