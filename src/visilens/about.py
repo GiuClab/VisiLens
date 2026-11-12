@@ -216,8 +216,6 @@ class AboutDialog(QDialog):
         if reply is None:
             return
         try:
-            if reply.error() != QNetworkReply.NetworkError.NoError:
-                raise ValueError(reply.errorString())
             http_status = reply.attribute(
                 QNetworkRequest.Attribute.HttpStatusCodeAttribute
             )
@@ -226,6 +224,8 @@ class AboutDialog(QDialog):
                     tr("Non sono ancora state pubblicate release ufficiali su GitHub."), BLUE
                 )
                 return
+            if reply.error() != QNetworkReply.NetworkError.NoError:
+                raise ValueError(reply.errorString())
             if http_status != 200:
                 raise ValueError("GitHub did not return a stable release")
             state, latest, url = assess_release(bytes(reply.readAll()))
