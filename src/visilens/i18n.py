@@ -117,6 +117,24 @@ ROWS = {
 "Support me": ("Support me","Unterstütze mich","Soutenez-moi"),
 }
 ROWS.update({
+    "Auto-Select disponibile solo in modalità Strict": (
+        "Auto-Select works in Strict mode only",
+        "Auto-Select funktioniert nur im Strict-Modus",
+        "Auto-Select fonctionne uniquement en mode Strict",
+    ),
+    "Auto-Select richiede Strict: modifica il livello di somiglianza.": (
+        "Auto-Select requires Strict: change the similarity level.",
+        "Auto-Select erfordert Strict: Ähnlichkeitsstufe ändern.",
+        "Auto-Select nécessite Strict : changez le niveau de similarité.",
+    ),
+    "Per macOS e Linux sono previste versioni future.": (
+        "macOS and Linux versions are planned for the future.",
+        "Versionen für macOS und Linux sind für die Zukunft geplant.",
+        "Des versions macOS et Linux sont prévues ultérieurement.",
+    ),
+})
+
+ROWS.update({
 "Guida all\'utilizzo": ("User guide","Benutzerhandbuch","Guide d\'utilisation"),
 "❤️ Support me": ("❤️ Support me","❤️ Unterstütze mich","❤️ Soutenez-moi"),
 "✦ Auto-Select": ("✦ Auto-Select","✦ Auto-Select","✦ Auto-Select"),
