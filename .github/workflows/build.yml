@@ -34,13 +34,12 @@ jobs:
       - name: Set portable profile
         shell: pwsh
         run: New-Item -ItemType File -Path dist/VisiLens/portable.flag | Out-Null
-      - name: Archive Windows package
-        shell: pwsh
-        run: Compress-Archive -Path dist/VisiLens -DestinationPath VisiLens-Windows.zip
-      - name: Upload package
+      # GitHub Actions downloads artifacts as ZIP archives automatically.
+      # Upload the built folder, not another ZIP, to avoid double extraction.
+      - name: Upload portable application (one ZIP extraction)
         uses: actions/upload-artifact@v6
         with:
-          name: VisiLens-Windows
-          path: VisiLens-Windows.zip
+          name: VisiLens-Portable-0.7.0-x64
+          path: dist/VisiLens/
           if-no-files-found: error
           retention-days: 30
