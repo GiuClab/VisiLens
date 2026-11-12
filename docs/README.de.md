@@ -28,7 +28,7 @@ Die Bildanalyse erfolgt **lokal auf deinem Computer**. Es sind weder Konto noch 
 - 🔍 **Drei Vergleichsstufen:** Loose, Basic oder Strict.
 - 🗂️ **Übersichtliche Gruppen:** alle Kopien mit Abmessungen und Dateigröße anzeigen.
 - 👁️ **Große Vorschau:** ein Foto vor der Auswahl genau ansehen.
-- ✅ **Manuelle Auswahl und Auto-Select:** optionale Vorschläge bei Strict, die geprüft werden müssen.
+- ✅ **Manuelle Auswahl und Auto-Select:** **Auto-Select funktioniert ausschließlich im Strict-Modus**, nicht bei Loose oder Basic. Alle Vorschläge prüfen.
 - 🗑️ **Windows-Papierkorb:** Dateien werden erst nach deiner Auswahl und Bestätigung verschoben.
 - ⚡ **Lokaler Cache:** beschleunigt erneute Scans unveränderter Dateien.
 - 🌍 **Vier Sprachen:** Englisch, Italienisch, Deutsch und Französisch.
