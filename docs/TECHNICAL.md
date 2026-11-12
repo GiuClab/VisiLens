@@ -1,6 +1,8 @@
 # VisiLens — technical and development notes
 
 This document preserves the detailed technical documentation from the earlier README.
+Some historical roadmap and download references are outdated; the current source of truth
+for supported Windows packages, languages and installer status is the [main README](../README.md).
 
 # VisiLens
 
