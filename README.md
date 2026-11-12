@@ -16,7 +16,8 @@ Inspired by the workflow of VisiPics; not affiliated with its authors.
   are installed automatically. GitHub Actions test artifacts are not releases.
 - Gallery tiles reserve their full layout immediately; visible thumbnails are
   decoded on worker threads and inserted without blocking the interface.
-- The Windows installer and macOS/Linux builds are planned for future releases.
+- Windows x64 installer built with Inno Setup alongside the portable ZIP. Linux and
+  macOS builds are planned for later releases.
 
 ## Features
 
@@ -90,8 +91,33 @@ Keep the `_internal` folder and `portable.flag` next to the executable.
 The `VisiLensData` folder is created automatically to store portable settings.
 On first launch, choose a language (English is selected by default).
 
-The Windows installer is planned for a future release. Dark mode is also
-postponed until it has been designed and tested properly.
+### Windows installer EXE
+
+The Windows build workflow now produces **two independent artifacts**:
+
+- `VisiLens-Installer-0.7.0-x64` contains
+  `VisiLens-Setup-0.7.0-x64.exe`. GitHub Actions wraps artifacts in a ZIP,
+  so extract the downloaded artifact once and run the installer EXE.
+- `VisiLens-Portable-0.7.0-x64` keeps the no-installation version.
+
+The installer supports Windows 10/11 x64. It installs into the current
+user's `AppData\\Local\\Programs\\VisiLens` by default, without requiring
+administrator rights. It shows a language picker (English is initially
+selected; Italian, German and French are available), the MIT license and a
+short safety/data-processing notice in the selected language. It creates a
+Start-menu shortcut, optionally a desktop shortcut, and a normal
+**Installed apps / Apps & features** uninstall entry.
+
+The application itself still asks for its preferred language on first launch,
+with **English selected by default**, independently of the installer language.
+The installer does not contain `portable.flag`, and the installed app uses
+normal user preferences instead of a portable settings directory.
+Uninstalling leaves existing user settings and fingerprint cache intact.
+
+The Windows installer is not code-signed yet; Windows SmartScreen may
+warn before first launch. Only install builds downloaded from the official
+GiuClab repository. A successful GitHub build is a preview, not a published
+stable release. Dark mode is postponed to a later release.
 
 ## Usage
 
