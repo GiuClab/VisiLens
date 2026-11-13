@@ -9,7 +9,7 @@
   <a href="../LICENSE"><img src="https://img.shields.io/badge/Lizenz-MIT-385AD0?labelColor=253148" alt="MIT-Lizenz"></a>
 </p>
 
-<p align="center"><a href="https://github.com/GiuClab/VisiLens/actions/workflows/build.yml"><strong>⬇️ Für Windows herunterladen</strong></a> · <a href="https://ko-fi.com/giuclab/tip">❤️ VisiLens unterstützen</a></p>
+<p align="center"><a href="https://github.com/GiuClab/VisiLens/releases/tag/v0.7.0"><strong>⬇️ Für Windows herunterladen</strong></a> · <a href="https://ko-fi.com/giuclab/tip">❤️ VisiLens unterstützen</a></p>
 
 <p align="center"><a href="../README.md">🇬🇧 English</a> · <a href="README.it.md">🇮🇹 Italiano</a> · <strong>🇩🇪 Deutsch</strong> · <a href="README.fr.md">🇫🇷 Français</a></p>
 
@@ -35,17 +35,17 @@ Die Bildanalyse erfolgt **lokal auf deinem Computer**. Es sind weder Konto noch 
 
 ## ⬇️ Download
 
-**Windows 10/11 · x64 · Vorabversion 0.7.0**
+**VisiLens v0.7.0 · Windows 10/11 · x64**
 
-| Paket | Verwendung |
-| --- | --- |
-| **Installer** (`VisiLens-Installer-0.7.0-x64`) | Workflow-Artefakt herunterladen, ZIP einmal entpacken und `VisiLens-Setup-0.7.0-x64.exe` starten. |
-| **Portable ZIP** (`VisiLens-Portable-0.7.0-x64`) | ZIP einmal entpacken, `_internal` neben `VisiLens.exe` belassen und das Programm ohne Installation starten. |
+| Version | Download | Verwendung |
+| --- | --- | --- |
+| **Windows-Installer** | **[EXE herunterladen](https://github.com/GiuClab/VisiLens/releases/download/v0.7.0/VisiLens-Setup-0.7.0-x64.exe)** | `VisiLens-Setup-0.7.0-x64.exe` starten, um das Programm zu installieren. |
+| **Portable Version** | **[ZIP herunterladen](https://github.com/GiuClab/VisiLens/releases/download/v0.7.0/VisiLens-Portable-0.7.0-x64.zip)** | Archiv entpacken, `_internal` neben `VisiLens.exe` belassen und das Programm ohne Installation starten. |
 
-**[Windows-Pakete über GitHub Actions herunterladen](https://github.com/GiuClab/VisiLens/actions/workflows/build.yml)**: einen erfolgreichen Workflow-Lauf öffnen und unter **Artifacts** das Paket auswählen. Möglicherweise ist eine GitHub-Anmeldung erforderlich.
+**[Offizielles Release v0.7.0 ansehen](https://github.com/GiuClab/VisiLens/releases/tag/v0.7.0)** mit Informationen und Downloads.
 
 > [!NOTE]
-> Die Downloads sind derzeit **Vorab-Artefakte von GitHub Actions**, keine offiziellen GitHub Releases. Sie können nach Ablauf der Aufbewahrungsfrist verschwinden. Aktuell ist noch kein offizielles Release veröffentlicht.
+> **v0.7.0 ist ein offiziell veröffentlichtes GitHub Release.** GitHub-Actions-Artefakte sind separate Build-Ergebnisse und für den Download dieser Version nicht erforderlich.
 
 > [!WARNING]
 > Windows SmartScreen kann warnen, weil der Installer nicht digital signiert ist. Lade VisiLens nur aus diesem offiziellen Repository herunter. Sichere wichtige Fotos und prüfe jedes gefundene Duplikat.
