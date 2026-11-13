@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GiuClab/VisiLens/actions/workflows/build.yml"><img src="assets/download-button.svg" alt="Download VisiLens for Windows - installer and portable" width="270"></a>
+  <a href="https://github.com/GiuClab/VisiLens/releases/tag/v0.7.0"><img src="assets/download-button.svg" alt="Download VisiLens for Windows - installer and portable" width="270"></a>
   <br>
   <a href="https://ko-fi.com/giuclab/tip">❤️ Support VisiLens on Ko-fi</a>
 </p>
@@ -55,17 +55,17 @@ Your photos are scanned **locally**. No account, subscription or cloud upload is
 
 ## ⬇️ Download
 
-**Windows 10/11 · x64 · version 0.7.0 preview**
+**VisiLens v0.7.0 · Windows 10/11 · x64**
 
-| Package | How to use it |
-| --- | --- |
-| **Installer** (`VisiLens-Installer-0.7.0-x64`) | Download the workflow artifact, unzip it once, then run `VisiLens-Setup-0.7.0-x64.exe`. |
-| **Portable ZIP** (`VisiLens-Portable-0.7.0-x64`) | Unzip once, keep `_internal` beside `VisiLens.exe`, and run the app without installing. |
+| Edition | Download | How to use it |
+| --- | --- | --- |
+| **Windows installer** | **[Download EXE](https://github.com/GiuClab/VisiLens/releases/download/v0.7.0/VisiLens-Setup-0.7.0-x64.exe)** | Run `VisiLens-Setup-0.7.0-x64.exe` to install the application. |
+| **Portable version** | **[Download ZIP](https://github.com/GiuClab/VisiLens/releases/download/v0.7.0/VisiLens-Portable-0.7.0-x64.zip)** | Extract the archive, keep `_internal` beside `VisiLens.exe`, then launch the application without installing. |
 
-**[Get the Windows builds from GitHub Actions](https://github.com/GiuClab/VisiLens/actions/workflows/build.yml)**. Open a successful run, scroll to **Artifacts**, and choose your package. GitHub may require sign-in to download workflow artifacts.
+**[View the official v0.7.0 release](https://github.com/GiuClab/VisiLens/releases/tag/v0.7.0)** for release details and downloads.
 
 > [!NOTE]
-> These are preview artifacts, **not yet official GitHub Releases**. They may expire after the workflow's retention period. VisiLens has no published release to download from the Releases page at present.
+> **v0.7.0 is an official, published GitHub Release.** GitHub Actions workflow artifacts are separate build outputs and are not needed to download this version.
 
 > [!WARNING]
 > Windows may display a SmartScreen warning because the installer is not digitally signed. Download only from this official repository. Review every suggested duplicate and back up important photographs before moving anything to the Recycle Bin.
